@@ -3,11 +3,6 @@
 "use strict";
 
 if (typeof(require) !== 'undefined') {
-    var spans = require('./spans');
-    var Range = spans.Range;
-    var union = spans.union;
-    var intersection = spans.intersection;
-
     var Papa = require('papaparse');
 }
 
@@ -19,29 +14,34 @@ function CsvFile() {
 function loadCsv(uri, callback) {
     var csv = new CsvFile();
     csv.uri = uri;
-
-    csv.fetch('',20,50,function(){});
+    callback(csv);
+    // TODO: just a test
+    // csv.fetch(20,50,callback);
+    return csv;
 }
 
-// Calls the callback with the fetched data????
-// chr is what
-// min & max are what
-// what's the callback do
-CsvFile.prototype.fetch = function(chr, min, max, callback) {
-    var thisC = this;
+// Calls the callback with the fetched data, or with
+// null as first parameter and an error message as second,
+// if something went wrong.
+// Min & max are the IDs to read, set max to zero to read everything after min
+CsvFile.prototype.fetch = function(min, max, callback) {
+    // console.log("fetching");
+    var self = this;
 
     var data = [];
 
-    function lineFunction(results, parser) {
+    function step(results, parser) {
         // results has three fields: data, errors, meta.
         // meta contains, among other things, the field names parsed in the header
 
         // we want to add the line to the data if the line is in the range
         // to be parsed...
-        // TODO: shouldn't assume that the name of the id-field is "id"!
-        if (results.data.id > min && results.data.id < max) {
+        // TODO: shouldn't assume that the name of the id-field is "id"
+        if (results.data[0].id > min && (max === 0 || results.data[0].id < max)) {
             data.push(results.data);
-            console.log(results.data);
+        } else if (results.data[0].id > max && max !== 0) {
+            console.log("after interval, aborting");
+            parser.abort();
         }
     }
 
@@ -49,15 +49,16 @@ CsvFile.prototype.fetch = function(chr, min, max, callback) {
     // parsed line
     var config = { download: true,
                    header: true, // to get JSON output
-                   step: lineFunction,
+                   step: step,
+                   // preview: 10, // simplify trial & error
                    error: function(err, file) {
                        callback(null, err);
                    },
-                   completed: function(results, file) {
-                       callback(results.data);
-                   };
+                   complete: function(results, file) {
+                       callback(data);
+                   }};
 
-    Papa.parse(thisC.uri, config);
+    Papa.parse(self.uri, config);
 }
 
 
