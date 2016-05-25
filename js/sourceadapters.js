@@ -1772,4 +1772,5 @@ if (typeof(module) !== 'undefined') {
     require('./memstore');
     require('./bedwig');
     require('./vcf');
+    require('./csv-source');
 }
