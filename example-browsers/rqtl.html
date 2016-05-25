@@ -1,0 +1,63 @@
+<!DOCTYPE html> 
+
+<html>
+
+<head>
+
+<style>
+</style>
+
+<title>R/QTL :: Dalliance</title> 
+<script language="javascript" src="../build/dalliance-all.js"></script>
+
+<script language="javascript">
+  var b = new Browser({
+    chr:          '3',
+    viewStart:    2000000,
+    viewEnd:      55000000,
+    cookieKey:    'rqtl',
+
+    coordSystem: {
+      speciesName: 'rqtl',
+    },
+
+      sources:     [{name:                 'Genemap',
+                     uri:                  'http://localhost:8000/grav2_gmap.csv',
+                     tier_type:            'rqtl',
+                     pinned: true
+      },
+                    {
+                        name: 'dummy genes',
+                        twoBitURI:            'http://www.biodalliance.org/datasets/hg19.2bit',
+                        tier_type:            'seq',
+                        provides_entrypoints: true,
+                        pinned: true
+                    },
+      /*             {name: 'GENCODE',
+                        bwgURI: 'http://www.biodalliance.org/datasets/gencode.bb',
+                        stylesheet_uri: 'http://www.biodalliance.org/stylesheets/gencode.xml',
+                        collapseSuperGroups: true,
+                        trixURI: 'http://www.biodalliance.org/datasets/geneIndex.ix'},*/
+                ],
+
+    setDocumentTitle: true,
+    uiPrefix: '../',
+    maxWorkers: 0,
+
+    fullScreen: true
+
+  });
+
+  b.addFeatureInfoPlugin(function(f, info) {
+      info.add('Testing', 'This is a test!');
+  });
+
+
+</script>
+</head>
+
+<body>
+<div id='svgHolder'>Failed to load the Biodalliance genome browser.  Have you run "gulp"?</div>
+</body>
+</html>
+
