@@ -11,12 +11,12 @@ function CsvFile() {
 
 // TODO: add indexing?
 // Parses the given data? Or returns a thing with the data to be parsed further
-function loadCsv(uri, callback) {
+function loadCsv(source, callback) {
     var csv = new CsvFile();
-    csv.uri = uri;
+    csv.source = source;
+
+    // This callback is literally only used in the test...
     callback(csv);
-    // TODO: just a test
-    // csv.fetch(20,50,callback);
     return csv;
 }
 
@@ -24,10 +24,9 @@ function loadCsv(uri, callback) {
 // null as first parameter and an error message as second,
 // if something went wrong.
 // Min & max are the IDs to read, set max to zero to read everything after min
-CsvFile.prototype.fetch = function(min, max, callback) {
-    // console.log("fetching");
+CsvFile.prototype.fetch = function(chr, min, max, parseCallback, doneCallback) {
+    // console.log("fetching chr: " + chr + "\t in (" + min + ", " + max + ")");
     var self = this;
-
     var data = [];
 
     function step(results, parser) {
@@ -36,13 +35,29 @@ CsvFile.prototype.fetch = function(min, max, callback) {
 
         // we want to add the line to the data if the line is in the range
         // to be parsed...
-        // TODO: shouldn't assume that the name of the id-field is "id"
+
+        // this is for _gmap files
+        if (results.data[0].chr === chr) {
+            if (results.data[0].pos > min && results.data[0].pos < max) {
+                // The callback wraps the parsed line in a DAS feature
+                // TODO: this should be called once per parsed line, in case we use chunks
+                if (parseCallback !== undefined) {
+                    parseCallback(results.data[0]);
+                } else {
+                    data.push(results.data[0]);
+                }
+            }
+        }
+
+        // This is for _geno files
+        /*
         if (results.data[0].id > min && (max === 0 || results.data[0].id < max)) {
-            data.push(results.data);
+            data.push(results.data[0]);
         } else if (results.data[0].id > max && max !== 0) {
             console.log("after interval, aborting");
             parser.abort();
         }
+        */
     }
 
     // The `step` field is the callback that's called on each
@@ -52,13 +67,17 @@ CsvFile.prototype.fetch = function(min, max, callback) {
                    step: step,
                    // preview: 10, // simplify trial & error
                    error: function(err, file) {
-                       callback(null, err);
+                       if (doneCallback !== undefined) {
+                           doneCallback(null, err);
+                       }
                    },
                    complete: function(results, file) {
-                       callback(data);
+                       if (doneCallback !== undefined) {
+                           doneCallback(data);
+                       }
                    }};
 
-    Papa.parse(self.uri, config);
+    Papa.parse(self.source.uri, config);
 }
 
 
