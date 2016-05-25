@@ -267,6 +267,12 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq, tierCallback) 
     if (source.instrument)
         console.log('Starting  fetch ' + viewID + ' (' + min + ', ' + max + ')');
     source.fetch(chr, min, max, this.scale, wantedTypes, this.pool, function(status, features, scale, coverage) {
+        console.log("Status: " + status);
+        // console.log("Features: " + features);
+        console.log("Feature 0:");
+        console.log(features[0]);
+        console.log("Scale: " + scale);
+        console.log("Coverage: " + coverage);
     	if (source.instrument)
     	    console.log('Finishing fetch ' + viewID);
 
