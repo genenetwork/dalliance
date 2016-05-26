@@ -15,10 +15,26 @@ describe('CSV files', function() {
         expect(csv).toBeTruthy();
     });
 
-    // TODO: make sure the retrieved data actually is correct
-    it('can retrieve lines from an interval', function(done) {
+    it('can retrieve lines given an interval', function(done) {
         csv = loadCsv(csvSource, function() {});
-        csv.fetch('3', 30.0, 45.0, undefined, function(data, err) {
+        csv.fetch({id: { min: 5, max: 15 }}, undefined, function(data, err) {
+            console.log("Test error to be falsy");
+            expect(err).toBeFalsy();
+            console.log("Test parsed data to be truthy");
+            expect(data).toBeTruthy();
+            console.log("Test all parsed lines to be correct chromosome & pos");
+            data.map(function (line) {
+                expect(line.id).toBeGreaterThan(4);
+                expect(line.id).toBeLessThan(15);
+            });
+            done();
+        });
+    }
+
+    // TODO: make sure the retrieved data actually is correct
+    it('can retrieve lines given an interval and additional constraint', function(done) {
+        csv = loadCsv(csvSource, function() {});
+        csv.fetch({chr: '3', pos: { min: 30.0, max: 45.0 }}, undefined, function(data, err) {
             console.log("Test error to be falsy");
             expect(err).toBeFalsy();
             console.log("Test parsed data to be truthy");
