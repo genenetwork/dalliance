@@ -11,9 +11,9 @@ function CsvFile() {
 
 // TODO: add indexing?
 // Parses the given data? Or returns a thing with the data to be parsed further
-function loadCsv(source, callback) {
+function loadCsv(uri, callback) {
     var csv = new CsvFile();
-    csv.source = source;
+    csv.uri = uri;
 
     // This callback is literally only used in the test...
     callback(csv);
@@ -24,10 +24,26 @@ function loadCsv(source, callback) {
 // null as first parameter and an error message as second,
 // if something went wrong.
 // Min & max are the IDs to read, set max to zero to read everything after min
-CsvFile.prototype.fetch = function(chr, min, max, parseCallback, doneCallback) {
-    // console.log("fetching chr: " + chr + "\t in (" + min + ", " + max + ")");
+// CsvFile.prototype.fetch = function(chr, min, max, filterParams, parseCallback, doneCallback) {
+CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
+    // We need a function that returns true depending on some values in the parsed
+    // line, that is, generalize the data[0].chr === chr stuff.
+
+    // Or just an object, containing the keys and values corresponding to the lines we
+    // want to parse. E.g. { chr: chr, pos: { min: min, max: max }
+    // or { id: { min: min, max: max }
+    // or just everything if there's no object given.
+
     var self = this;
     var data = [];
+
+    function parseLine(line) {
+        if (parseCallback !== undefined) {
+            parseCallback(line);
+        } else {
+            data.push(line);
+        }
+    }
 
     function step(results, parser) {
         // results has three fields: data, errors, meta.
@@ -37,8 +53,35 @@ CsvFile.prototype.fetch = function(chr, min, max, parseCallback, doneCallback) {
         // to be parsed...
 
         // this is for _gmap files
+        if (filterParams) {
+            // console.log(filterParams);
+            // This could be done better by looping through / mapping over the filterParams keys, but effort
+            if (filterParams.id !== undefined &&
+                filterParams.id === results.data[0].id) {
+                parseLine(results.data[0]);
+            } else if (filterParams.chr !== undefined &&
+                       filterParams.chr === results.data[0].chr) {
+                // We want to parse the line if we're in the right chromosome
+                // and if we're in the right interval. if we're not given an interval
+                // we assume we want the whole thing
+                if (filterParams.pos !== undefined) {
+                    if (results.data[0].pos > filterParams.pos.min &&
+                        results.data[0].pos < filterParams.pos.max) {
+                        parseLine(results.data[0]);
+                    }
+                } else {
+                    parseLine(results.data[0]);
+                }
+            }
+        } else {
+            parseLine(results.data[0]);
+        }
+
+        /*
         if (results.data[0].chr === chr) {
+            console.log("in chr: " + chr);
             if (results.data[0].pos > min && results.data[0].pos < max) {
+                console.log("pos: " + results.data[0].pos + "\tin interval");
                 // The callback wraps the parsed line in a DAS feature
                 // TODO: this should be called once per parsed line, in case we use chunks
                 if (parseCallback !== undefined) {
@@ -48,6 +91,7 @@ CsvFile.prototype.fetch = function(chr, min, max, parseCallback, doneCallback) {
                 }
             }
         }
+         */
 
         // This is for _geno files
         /*
@@ -77,7 +121,7 @@ CsvFile.prototype.fetch = function(chr, min, max, parseCallback, doneCallback) {
                        }
                    }};
 
-    Papa.parse(self.source.uri, config);
+    Papa.parse(self.uri, config);
 }
 
 
