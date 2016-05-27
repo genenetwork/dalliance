@@ -11,6 +11,40 @@
         <script language="javascript" src="../build/dalliance-all.js"></script>
 
         <script language="javascript">
+         var ironControl = {
+             "crosstype": "f2",
+             // TODO: these should point to relative URIs
+             "geno": "http://localhost:8000/iron_geno.csv",
+             "pheno": "iron_pheno.csv",
+             "phenocovar": "iron_phenocovar.csv",
+             "covar": "iron_covar.csv",
+             "gmap": "http://localhost:8000/iron_gmap.csv",
+             "pmap": "iron_pmap.csv",
+             "alleles": [
+                 "S",
+                 "B"
+             ],
+             "genotypes": {
+                 "SS": 1,
+                 "SB": 2,
+                 "BB": 3
+             },
+             "sex": {
+                 "covar": "sex",
+                 "f": "female",
+                 "m": "male"
+             },
+             "cross_info": {
+                 "covar": "cross_direction",
+                 "(SxB)x(SxB)": 0,
+                 "(BxS)x(BxS)": 1
+             },
+             "x_chr": "X",
+             "na.strings": [
+                 "-",
+                 "NA"
+             ]
+         };
          var b = new Browser({
              chr:          '3',
              viewStart:    2000000,
@@ -47,6 +81,7 @@
                   provides_entrypoints: true
                  },
                  {name:                 'Genemap',
+                  control: ironControl,
                   //uri:                  'http://localhost:8000/iron_gmap.csv',
                   gmapUri:                  'http://localhost:8000/iron_gmap.csv',
                   genoUri:                  'http://localhost:8000/iron_geno.csv',
@@ -76,7 +111,8 @@
          });
 
          b.addFeatureInfoPlugin(function(f, info) {
-             info.add('Testing', 'This is a test!');
+             info.add("id", f.id);
+             info.add("genotype", f.genotype);
          });
 
         </script>
