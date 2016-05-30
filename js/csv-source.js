@@ -61,6 +61,7 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
                 // Features are ordered by type then label
                 feature.label = results.id;
                 feature.type = "id";
+                feature.method = results[key];
                 feature.segment = chr;
 
                 feature.marker = key;
@@ -70,16 +71,6 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
                 if (pos) {
                     feature.min = (pos * 1000000);
                     feature.max = (pos * 1000000) + 150;
-                }
-                // TODO: this should be configured in a stil
-                if (feature.genotype === "SS") {
-                    feature.itemRgb = "rgb(255,0,0)";
-                } else if (feature.genotype === "SB") {
-                    feature.itemRgb = "rgb(0,255,0)";
-                } else if (feature.genotype === "BB") {
-                    feature.itemRgb = "rgb(0,0,255)";
-                } else if (feature.genotype === "-") {
-                    feature.itemRgb = "rgb(0,0,0)";
                 }
 
                 indivFeatures.push(feature);
@@ -106,41 +97,38 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     naStyle.glyph = "BOX";
     naStyle.LINE = 0.2;
     naStyle.FGCOLOR = "black";
-    // naStyle.BGCOLOR = "black";
+    naStyle.BGCOLOR = "white";
     naStyle.BGITEM = true;
     naStyle.HEIGHT = height;
     naStyle.BUMP = true;
-    stylesheet.pushStyle({type: "default"}, null, naStyle);
+    stylesheet.pushStyle({type: "default", method: "-"}, null, naStyle);
 
-    // The colors are set in fetch() for now
-    /*
     var ssStyle = new DASStyle();
     ssStyle.glyph = "BOX";
     ssStyle.LINE = 0.2;
-    ssStyle.FGCOLOR = "black";
+    ssStyle.FGCOLOR = "blue";
     ssStyle.BGCOLOR = "blue";
     ssStyle.HEIGHT = height;
     ssStyle.BUMP = true;
-    stylesheet.pushStyle({type: "ss"}, null, ssStyle);
+    stylesheet.pushStyle({type: "default", method: "SS"}, null, ssStyle);
 
     var sbStyle = new DASStyle();
     sbStyle.glyph = "BOX";
     sbStyle.LINE = 0.2;
-    sbStyle.FGCOLOR = "black";
+    sbStyle.FGCOLOR = "green";
     sbStyle.BGCOLOR = "green";
     sbStyle.HEIGHT = height;
     sbStyle.BUMP = true;
-    stylesheet.pushStyle({type: "sb"}, null, sbStyle);
+    stylesheet.pushStyle({type: "default", method: "SB"}, null, sbStyle);
 
     var bbStyle = new DASStyle();
     bbStyle.glyph = "BOX";
     bbStyle.LINE = 0.2;
-    bbStyle.FGCOLOR = "black";
+    bbStyle.FGCOLOR = "red";
     bbStyle.BGCOLOR = "red";
     bbStyle.HEIGHT = height;
     bbStyle.BUMP = true;
-    stylesheet.pushStyle({type: "bb"}, null, bbStyle);
-    */
+    stylesheet.pushStyle({type: "default", method: "BB"}, null, bbStyle);
 
     return callback(stylesheet);
 };
