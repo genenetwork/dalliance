@@ -60,9 +60,10 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
                 feature.id = results.id;
                 // Features are ordered by type then label
                 feature.label = results.id;
-                feature.type = "marker";
+                feature.type = "id";
                 feature.segment = chr;
 
+                feature.marker = key;
                 feature.genotype = results[key];
 
                 var pos = self.markerPositions[key];
@@ -90,7 +91,7 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
     }, function(results, error) {
         // when it's all parsed, we can return
         // callback takes status, features, and scale...
-        return callback(null, self.features, 1000000);
+        return callback(null, self.features, 1);
     });
 };
 

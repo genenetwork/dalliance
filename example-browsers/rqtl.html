@@ -49,6 +49,7 @@
              chr:          '3',
              viewStart:    2000000,
              viewEnd:      55000000,
+             maxViewWidth: 5000000,
              cookieKey:    'rqtl',
 
              coordSystem: {
@@ -112,6 +113,7 @@
 
          b.addFeatureInfoPlugin(function(f, info) {
              info.add("id", f.id);
+             info.add("marker", f.marker);
              info.add("genotype", f.genotype);
          });
 
