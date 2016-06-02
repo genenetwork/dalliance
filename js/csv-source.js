@@ -40,6 +40,9 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
     var cmMax = max / 1000000;
 
     self.features = [];
+    // We need to keep track of the previous feature since we're filling
+    // each one out to the next
+    var prevFeature = null;
 
     // This fetches the markers and saves their positions
     this.gmapCsv.fetch({chr: chr, pos: {min: cmMin, max: cmMax}}, function(results, error) {
@@ -70,16 +73,27 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
                 var pos = self.markerPositions[key];
                 if (pos) {
                     feature.min = (pos * 1000000);
-                    feature.max = (pos * 1000000) + 150;
+                    // feature.max = (pos * 1000000) + 150;
                 }
+                // If we're not at the fi
+                if (prevFeature !== null) {
+                    prevFeature.max = (pos * 1000000) - 10;
+                    indivFeatures.push(prevFeature);
+                }
+                prevFeature = feature;
 
-                indivFeatures.push(feature);
+                // indivFeatures.push(feature);
             }
         });
         // Need to keep track of all features for all parsed lines
         self.features = self.features.concat(indivFeatures);
 
     }, function(results, error) {
+        // finally we need to set the size of the last feature
+        // prevFeature.max = (pos * 1000000) + 150000;
+        prevFeature.max = cmMax;
+        self.features.push(prevFeature);
+        // self.features = self.features.concat([prevFeature]);
         // when it's all parsed, we can return
         // callback takes status, features, and scale...
         return callback(null, self.features, 1);
@@ -90,12 +104,13 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
 RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     var stylesheet = new DASStylesheet();
 
-    var height = 5;
+    var height = 7;
+    var line = 0.5;
 
     // TODO: should handle all N/A strings
     var naStyle = new DASStyle();
     naStyle.glyph = "BOX";
-    naStyle.LINE = 0.2;
+    naStyle.LINE = line;
     naStyle.FGCOLOR = "black";
     naStyle.BGCOLOR = "white";
     naStyle.BGITEM = true;
@@ -105,7 +120,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
 
     var ssStyle = new DASStyle();
     ssStyle.glyph = "BOX";
-    ssStyle.LINE = 0.2;
+    ssStyle.LINE = line;
     ssStyle.FGCOLOR = "blue";
     ssStyle.BGCOLOR = "blue";
     ssStyle.HEIGHT = height;
@@ -114,7 +129,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
 
     var sbStyle = new DASStyle();
     sbStyle.glyph = "BOX";
-    sbStyle.LINE = 0.2;
+    sbStyle.LINE = line;
     sbStyle.FGCOLOR = "green";
     sbStyle.BGCOLOR = "green";
     sbStyle.HEIGHT = height;
@@ -123,7 +138,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
 
     var bbStyle = new DASStyle();
     bbStyle.glyph = "BOX";
-    bbStyle.LINE = 0.2;
+    bbStyle.LINE = line;
     bbStyle.FGCOLOR = "red";
     bbStyle.BGCOLOR = "red";
     bbStyle.HEIGHT = height;
