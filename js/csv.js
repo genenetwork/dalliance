@@ -26,6 +26,7 @@ function loadCsv(uri, callback) {
 // Min & max are the IDs to read, set max to zero to read everything after min
 // CsvFile.prototype.fetch = function(chr, min, max, filterParams, parseCallback, doneCallback) {
 CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
+    console.log("fetching");
     // We need a function that returns true depending on some values in the parsed
     // line, that is, generalize the data[0].chr === chr stuff.
 
@@ -45,37 +46,40 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
         }
     }
 
-    function step(results, parser) {
+    function parseChunk(results, parser) {
         // results has three fields: data, errors, meta.
         // meta contains, among other things, the field names parsed in the header
 
         // we want to add the line to the data if the line is in the range
         // to be parsed...
 
+        results.data.map(function(data) {
         // this is for _gmap files
         if (filterParams) {
             // console.log(filterParams);
             // This could be done better by looping through / mapping over the filterParams keys, but effort
             if (filterParams.id !== undefined &&
-                filterParams.id === results.data[0].id) {
-                parseLine(results.data[0]);
+                filterParams.id === data.id) {
+                parseLine(data);
             } else if (filterParams.chr !== undefined &&
-                       filterParams.chr === results.data[0].chr) {
+                       filterParams.chr === data.chr) {
                 // We want to parse the line if we're in the right chromosome
                 // and if we're in the right interval. if we're not given an interval
                 // we assume we want the whole thing
                 if (filterParams.pos !== undefined) {
-                    if (results.data[0].pos > filterParams.pos.min &&
-                        results.data[0].pos < filterParams.pos.max) {
-                        parseLine(results.data[0]);
+                    if (data.pos > filterParams.pos.min &&
+                        data.pos < filterParams.pos.max) {
+                        parseLine(data);
                     }
                 } else {
-                    parseLine(results.data[0]);
+                    parseLine(data);
                 }
             }
         } else {
-            parseLine(results.data[0]);
+            parseLine(data);
         }
+        });
+
 
         /*
         if (results.data[0].chr === chr) {
@@ -108,7 +112,8 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
     // parsed line
     var config = { download: true,
                    header: true, // to get JSON output
-                   step: step,
+                   // step: step,
+                   chunk: parseChunk,
                    // preview: 10, // simplify trial & error
                    error: function(err, file) {
                        if (doneCallback !== undefined) {
@@ -121,6 +126,7 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
                        }
                    }};
 
+    console.log("uri: " + self.uri);
     Papa.parse(self.uri, config);
 }
 
