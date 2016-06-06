@@ -46,9 +46,9 @@
              ]
          };
          var b = new Browser({
-             chr:          '3',
-             viewStart:    2000000,
-             viewEnd:      55000000,
+             chr:          '11',
+             viewStart:    10000000,
+             viewEnd:      30000000,
              maxViewWidth: 5000000,
              cookieKey:    'rqtl',
 
@@ -60,7 +60,7 @@
                  ucscName: 'mm10'
              },
 
-             /*
+
              chains: {
                  mm9ToMm10: new Chainset('http://www.derkholm.net:8080/das/mm9ToMm10/', 'NCBIM37', 'GRCm38',
                                          {
@@ -71,7 +71,6 @@
                                              ucscName: 'mm9'
                                          })
              },
-             */
 
              sources:
              [
@@ -83,24 +82,21 @@
                  },
                  {name:                 'Genemap',
                   control: ironControl,
-                  //uri:                  'http://localhost:8000/iron_gmap.csv',
-                  gmapUri:                  'http://localhost:8000/iron_gmap.csv',
-                  genoUri:                  'http://localhost:8000/iron_geno.csv',
                   tier_type:            'rqtl',
                   pinned: true
                  },
-                 /*{
-                    name: 'dummy genes',
-                    twoBitURI:            'http://www.biodalliance.org/datasets/hg19.2bit',
-                    tier_type:            'seq',
-                    provides_entrypoints: true,
-                    pinned: true
-                    },*/
-                 /*             {name: 'GENCODE',
-                    bwgURI: 'http://www.biodalliance.org/datasets/gencode.bb',
-                    stylesheet_uri: 'http://www.biodalliance.org/stylesheets/gencode.xml',
-                    collapseSuperGroups: true,
-                    trixURI: 'http://www.biodalliance.org/datasets/geneIndex.ix'},*/
+                 {name: 'Genes',
+                  desc: 'Gene structures from GENCODE M2',
+                  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
+                  stylesheet_uri: 'http://www.biodalliance.org/stylesheets/gencode.xml',
+                  collapseSuperGroups: true,
+                  trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'
+                 },
+                 {name: 'Repeats',
+                  desc: 'Repeat annotation from UCSC', 
+                  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',
+                  stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'
+                 },
              ],
 
              setDocumentTitle: true,
