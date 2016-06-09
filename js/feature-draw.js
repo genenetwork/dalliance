@@ -853,6 +853,8 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             }
         }
     } else if (gtype === 'HISTOGRAM' || gtype === 'GRADIENT' && score !== 'undefined') {
+        var centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
+
         var smin = tier.quantMin(style);
         var smax = tier.quantMax(style);
 
@@ -873,6 +875,16 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
         if ((1.0 * score) > (1.0 * smax)) {
             score = smax;
         }
+
+        // Shift smin/smax in case we want to center the histogram
+        // on the horizontal axis
+        if (centerOnAxis) {
+            var tmin = tier.quantMin(style);
+            var tmax = tier.quantMax(style);
+            smin = tmin - ((tmax - tmin) / 2);
+            smax = tmax - ((tmax - tmin) / 2);
+        }
+
         var relScore = ((1.0 * score) - smin) / (smax-smin);
         var relOrigin = (-1.0 * smin) / (smax - smin);
 
@@ -880,9 +892,13 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             if (relScore >= relOrigin) {
                 height = (relScore - Math.max(0, relOrigin)) * requiredHeight;
                 y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight) - height;
+                if (centerOnAxis)
+                    y += height / 2;
             } else {
                 height = (Math.max(0, relOrigin) - relScore) * requiredHeight;
                 y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight);
+                if (centerOnAxis)
+                    y -= height / 2;
             }
             quant = {min: smin, max: smax};
         }
