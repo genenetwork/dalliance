@@ -12,6 +12,8 @@
             <COLOR1>red</COLOR1>
             <COLOR2>red</COLOR2>
             <COLOR3>red</COLOR3>
+            <AXISCENTER>true</AXISCENTER>
+            <HIDEAXISLABEL>false</HIDEAXISLABEL>
           </HISTOGRAM>
         </GLYPH>
       </TYPE>
