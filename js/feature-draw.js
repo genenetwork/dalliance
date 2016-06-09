@@ -900,7 +900,10 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
                 if (centerOnAxis)
                     y -= height / 2;
             }
-            quant = {min: smin, max: smax};
+            if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
+                quant = null;
+            else
+                quant = {min: smin, max: smax};
         }
 
         var stroke = style.FGCOLOR || null;
