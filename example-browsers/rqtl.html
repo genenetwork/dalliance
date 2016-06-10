@@ -10,15 +10,16 @@
         <title>R/QTL :: Dalliance</title> 
         <script language="javascript" src="../build/dalliance-all.js"></script>
 
+
         <script language="javascript">
          var ironControl = {
              "crosstype": "f2",
              // TODO: these should point to relative URIs
-             "geno": "http://localhost:8000/iron_geno.csv",
+             "geno": "http://192.168.56.100:8880/genotype/mouse/iron/?file=geno&chr=11",
+             "gmap": "http://192.168.56.100:8880/genotype/mouse/iron/?file=gmap&chr=11",
              "pheno": "iron_pheno.csv",
              "phenocovar": "iron_phenocovar.csv",
              "covar": "iron_covar.csv",
-             "gmap": "http://localhost:8000/iron_gmap.csv",
              "pmap": "iron_pmap.csv",
              "alleles": [
                  "S",
@@ -88,8 +89,7 @@
                  {name: 'Genes',
                   desc: 'Gene structures from GENCODE M2',
                   bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
-                  //stylesheet_uri: 'http://www.biodalliance.org/stylesheets/gencode.xml',
-                  stylesheet_uri: 'http://localhost:8000/gencode.xml',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
                   collapseSuperGroups: true,
                   trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'
                  },
@@ -99,9 +99,9 @@
                   stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'
                  },
                  {name: 'SNP density',
-                  uri: 'http://localhost:8000/test.bed.gz',
+                  uri: 'http://192.168.56.100:8880/snp/test.bed.gz',
                   tier_type: 'tabix',
-                  stylesheet_uri: 'http://localhost:8000/snp-stylesheet.xml',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',
                   payload: 'bed'
                  }
              ],
