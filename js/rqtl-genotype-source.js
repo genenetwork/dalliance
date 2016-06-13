@@ -20,8 +20,8 @@ if (typeof(require) !== 'undefined') {
 function RqtlGenotypeSource(source) {
     FeatureSourceBase.call(this);
 
-    this.genoCsv = Csv.loadCsv(source.control.geno, function(){});
-    this.gmapCsv = Csv.loadCsv(source.control.gmap, function(){});
+    this.genoCsv = Csv.loadCsv(source.control.geno, function() {});
+    this.gmapCsv = Csv.loadCsv(source.control.gmap, function() {});
 
     this.alleles = source.control.alleles;
     this.genotypes = source.control.genotypes;
@@ -45,19 +45,25 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
     var prevFeature = null;
 
     // This fetches the markers and saves their positions
-    this.gmapCsv.fetch({chr: chr, pos: {min: cmMin, max: cmMax}}, function(results, error) {
+    this.gmapCsv.fetch({
+        chr: chr,
+        pos: {
+            min: cmMin,
+            max: cmMax
+        }
+    }, function(results, error) {
         self.markerPositions[results.marker] = results.pos;
     });
 
     // And this fetches the genotype data itself, returning features
     // first argument is null since we want all lines parsed
     this.genoCsv.fetch(null, function(results, error) {
-    // this.source.fetch(chr, cmMin, cmMax, function(results, error) {
+        // this.source.fetch(chr, cmMin, cmMax, function(results, error) {
         // TODO: fix the stylesheet...
         var indivFeatures = [];
 
         // We want to go through all the keys (that aren't 'id') - they're the markers
-        Object.keys(results).map(function (key) {
+        Object.keys(results).map(function(key) {
             if (key !== 'id') {
                 var feature = new DASFeature();
                 feature.id = results.id;
@@ -73,9 +79,8 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
                 var pos = self.markerPositions[key];
                 if (pos) {
                     feature.min = (pos * 1000000);
-                    // feature.max = (pos * 1000000) + 150;
                 }
-                // If we're not at the fi
+                // If we're not at the final feature
                 if (prevFeature !== null) {
                     prevFeature.max = (pos * 1000000) - 10;
                     indivFeatures.push(prevFeature);
@@ -89,11 +94,9 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
         self.features = self.features.concat(indivFeatures);
 
     }, function(results, error) {
-        // finally we need to set the size of the last feature
-        // prevFeature.max = (pos * 1000000) + 150000;
+        // finally we need to set the size of the last feature and add it
         prevFeature.max = cmMax;
         self.features.push(prevFeature);
-        // self.features = self.features.concat([prevFeature]);
         // when it's all parsed, we can return
         // callback takes status, features, and scale...
         return callback(null, self.features, 1);
@@ -116,7 +119,10 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     naStyle.BGITEM = true;
     naStyle.HEIGHT = height;
     naStyle.BUMP = true;
-    stylesheet.pushStyle({type: "default", method: "-"}, null, naStyle);
+    stylesheet.pushStyle({
+        type: "default",
+        method: "-"
+    }, null, naStyle);
 
     var ssStyle = new DASStyle();
     ssStyle.glyph = "BOX";
@@ -125,7 +131,10 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     ssStyle.BGCOLOR = "blue";
     ssStyle.HEIGHT = height;
     ssStyle.BUMP = true;
-    stylesheet.pushStyle({type: "default", method: "SS"}, null, ssStyle);
+    stylesheet.pushStyle({
+        type: "default",
+        method: "SS"
+    }, null, ssStyle);
 
     var sbStyle = new DASStyle();
     sbStyle.glyph = "BOX";
@@ -134,7 +143,10 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     sbStyle.BGCOLOR = "green";
     sbStyle.HEIGHT = height;
     sbStyle.BUMP = true;
-    stylesheet.pushStyle({type: "default", method: "SB"}, null, sbStyle);
+    stylesheet.pushStyle({
+        type: "default",
+        method: "SB"
+    }, null, sbStyle);
 
     var bbStyle = new DASStyle();
     bbStyle.glyph = "BOX";
@@ -143,12 +155,17 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     bbStyle.BGCOLOR = "red";
     bbStyle.HEIGHT = height;
     bbStyle.BUMP = true;
-    stylesheet.pushStyle({type: "default", method: "BB"}, null, bbStyle);
+    stylesheet.pushStyle({
+        type: "default",
+        method: "BB"
+    }, null, bbStyle);
 
     return callback(stylesheet);
 };
 
 // Add the source adapter to BD, so it can be used in the browser
-dalliance_registerSourceAdapterFactory('rqtl', function(source) {
-    return {features: new RqtlGenotypeSource(source)};
+dalliance_registerSourceAdapterFactory('rqtl-genotype', function(source) {
+    return {
+        features: new RqtlGenotypeSource(source)
+    };
 });
