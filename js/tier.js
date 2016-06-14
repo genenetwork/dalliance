@@ -288,6 +288,42 @@ DasTier.prototype.draw = function() {
         drawFeatureTier(this);
     }
     this.paint();
+    /*
+     Draw horizontal ruler
+     */
+    var gc = this.viewport.getContext('2d');
+    // gc.clearRect(0, 0, t, canvasHeight);
+
+    gc.save();
+    var retina = this.browser.retina && window.devicePixelRatio > 1;
+    if (retina) {
+        gc.scale(2, 2);
+    }
+
+    // The actual value of the ruler, w.r.t. the other data in the plot
+    var max = 1;
+    var min = 0;
+
+    var lrs = 0.55;
+    var rulerWidth = 3;
+
+    // this should take the max value into account
+    // var rulerHeight = ((1 - lrs) * this.viewport.height) - (this.padding * 2) + (rulerWidth / 2);
+    var rulerHeight = ((1 - lrs) * this.viewport.height) - (this.padding * 2);
+
+    var bWidth = this.viewport.width;
+    var bHeight = this.viewport.height;
+
+    gc.strokeStyle = "#ff0000";
+    gc.beginPath();
+    gc.moveTo(-bWidth,rulerHeight);
+    var oldLineWidth = gc.lineWidth;
+    gc.lineWidth = rulerWidth;
+    gc.lineTo(2*bWidth,rulerHeight);
+    gc.stroke();
+    gc.save();
+    gc.lineWidth = oldLineWidth;
+
     this.originHaxx = 0;
     this.browser.arrangeTiers();
 }

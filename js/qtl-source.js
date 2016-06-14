@@ -33,6 +33,7 @@ QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callb
     var features = [];
     var prevPos = 0;
 
+    /*
     var lrs = 0.1;
     var lrsFeature = new DASFeature();
     lrsFeature.min = 1;
@@ -40,6 +41,7 @@ QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callb
     lrsFeature.score = lrs;
     lrsFeature.type = "ruler";
     features.push(lrsFeature);
+     */
 
     this.lodCsv.fetch({chr: chr}, function(results, error) {
         var feature = new DASFeature();
