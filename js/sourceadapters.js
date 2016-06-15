@@ -98,12 +98,14 @@ DasTier.prototype.initSources = function() {
 }
 
 Browser.prototype.createSources = function(config) {
-    var sources = this.sourceCache.get(config);
+    var self = this;
+    var sources = self.sourceCache.get(config);
     if (sources)
         return sources;
 
     var fs, ss;
 
+    console.log(config.tier_type);
     if (config.tier_type == 'sequence' || config.twoBitURI || config.twoBitBlob) {
         if (config.twoBitURI || config.twoBitBlob) {
             ss = new TwoBitSequenceSource(config);
@@ -114,7 +116,20 @@ Browser.prototype.createSources = function(config) {
         }
     } else if (config.tier_type && __dalliance_sourceAdapterFactories[config.tier_type]) {
         var saf = __dalliance_sourceAdapterFactories[config.tier_type];
-        var ns = saf(config);
+        console.log("saf");
+        console.log(saf);
+        var ns;
+        if (config.tier_type === 'multi-track') {
+            console.log(config);
+            // If we're a multi-track source we want to create each sub-source
+            console.log(this);
+            ns = saf(config, function(s) {
+                console.log(self);
+                return self.createSources(s);
+            });
+        } else {
+            ns = saf(config);
+        }
         fs = ns.features;
         ss = ns.sequence;
     } else if (config.bwgURI || config.bwgBlob) {
