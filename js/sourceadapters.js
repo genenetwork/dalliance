@@ -192,7 +192,12 @@ Browser.prototype.createSources = function(config) {
 
 DasTier.prototype.fetchStylesheet = function(cb) {
     var ssSource;
+    console.log("in fetch");
+    console.log(this);
     // Somewhat ugly workaround for the special case of DAS sources...
+    if (this.dasSource.tier_type === "multi-track") {
+        ssSource = this.getSource();
+    } else
     if (this.dasSource.stylesheet_uri || (
         !this.dasSource.tier_type &&
         !this.dasSource.bwgURI &&
@@ -208,6 +213,7 @@ DasTier.prototype.fetchStylesheet = function(cb) {
     } else {
         ssSource = this.getSource();
     }
+    console.log(ssSource);
     ssSource.getStyleSheet(cb);
 }
 
@@ -312,10 +318,19 @@ CachingFeatureSource.prototype.fetch = function(chr, min, max, scale, types, poo
             return;
         }
     } else if (awaitedFeatures) {
-        awaitedFeatures.styleFilters.addAll(styleFilters);
+        console.log("awaited:")
+        console.log(awaitedFeatures);
+        if (awaitedFeatures.styleFilters)
+            awaitedFeatures.styleFilters.addAll(styleFilters);
     } else {
         awaitedFeatures = new Awaited();
-        awaitedFeatures.styleFilters = styleFilters;
+        console.log("sf:");
+        console.log(styleFilters);
+        var typeList = null;
+        if (styleFilters) {
+            awaitedFeatures.styleFilters = styleFilters;
+            typeList = awaitedFeatures.styleFilters.typeList();
+        }
         pool.awaitedFeatures[cacheKey] = awaitedFeatures;
 
         pool.requestsIssued.then(function() {
@@ -325,7 +340,7 @@ CachingFeatureSource.prototype.fetch = function(chr, min, max, scale, types, poo
                 min, 
                 max, 
                 scale, 
-                awaitedFeatures.styleFilters.typeList(), 
+                typeList,
                 pool, 
                 function(status, features, scale, coverage) {
                     if (!awaitedFeatures.res)
@@ -1775,6 +1790,7 @@ if (typeof(module) !== 'undefined') {
         RemoteBAMFeatureSource: RemoteBAMFeatureSource,
         DummyFeatureSource: DummyFeatureSource,
         DummySequenceSource: DummySequenceSource,
+        DASFeatureSource: DASFeatureSource,
 
         registerSourceAdapterFactory: dalliance_registerSourceAdapterFactory,
         registerParserFactory: dalliance_registerParserFactory,
