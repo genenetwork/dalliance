@@ -154,7 +154,10 @@ function drawFeatureTier(tier)
         var gf = gbsFeatures[gbs];
         var style = gbsStyles[gbs];
         if (style.glyph == 'LINEPLOT') {
-            glyphs.push(makeLineGlyph(gf, style, tier));
+            var lineGraphGlyphs = makeLineGlyph(gf, style, tier);
+            lineGraphGlyphs.forEach(function(lgg) {
+                glyphs.push(lgg);
+            });
             specials = true;
         }
     }
@@ -1185,23 +1188,65 @@ function makeLineGlyph(features, style, tier) {
     var width = style.LINEWIDTH || 1;
     var color = style.FGCOLOR || style.COLOR1 || 'black';
 
-    var points = [];
-    for (var fi = 0; fi < features.length; ++fi) {
-        var f = features[fi];
+    var prevSign = 1;
+    var curSign = null;
 
+    var curGlyphPoints = [];
+    var glyphSequences = [];
+
+    var prevPoint = null;
+
+    features.forEach(function(f) {
         var px = ((((f.min|0) + (f.max|0)) / 2) - origin) * scale;
         var sc = ((f.score - (1.0*min)) * yscale)|0;
-        var py = (height - sc);  // FIXME y???
-        points.push(px);
-        points.push(py);
+
+        // Additive tracks are always above the x-axis, and are colored
+        // depending on whether the score is positive or negative.
+        if (isDasBooleanTrue(style.ADDITIVE)) {
+            if (f.score < 0) {
+                curSign = -1;
+            } else {
+                curSign = 1;
+            }
+
+            if (curSign !== prevSign) {
+                glyphSequences.push({points: curGlyphPoints,
+                                     color: prevSign === 1
+                                     ? style.POSCOLOR
+                                     : style.NEGCOLOR});
+                curGlyphPoints = [];
+                // Need to add the previous point to this sequence,
+                // otherwise there is a gap in the resulting plot
+                curGlyphPoints.push(prevPoint.x);
+                curGlyphPoints.push(prevPoint.y);
+            }
+            prevSign = curSign;
+        }
+
+        var py = (height - (sc * curSign));
+        curGlyphPoints.push(px);
+        curGlyphPoints.push(py);
+        prevPoint = {x: px, y: py};
+    });
+
+    // Need to add the final sequence of points as well.
+    if (isDasBooleanTrue(style.ADDITIVE)) {
+        color = curSign === 1 ? style.POSCOLOR : style.NEGCOLOR;
     }
-    var lgg = new LineGraphGlyph(points, color, height);
-    lgg.quant = {min: min, max: max};
+    glyphSequences.push({points: curGlyphPoints,
+                         color: color});
 
-    if (style.ZINDEX) 
-        lgg.zindex = style.ZINDEX|0;
+    var lggs = glyphSequences.map(function(gs) {
+        var lgg = new LineGraphGlyph(gs.points, gs.color, height);
+        lgg.quant = {min: min, max: max};
 
-    return lgg;
+        if (style.ZINDEX)
+            lgg.zindex = style.ZINDEX|0;
+
+        return lgg;
+    });
+
+    return lggs;
 }
 
 DasTier.prototype.quantMin = function(style) {
