@@ -81,34 +81,39 @@
                   tier_type: 'sequence',
                   provides_entrypoints: true
                  },
-                 {name:                 'Genemap',
-                  control: ironControl,
-                  tier_type:            'rqtl-genotype',
-                  pinned: true
-                 },
-                 /* {name: 'Genes',*/
-                 /* desc: 'Gene structures from GENCODE M2',*/
-                 /* bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',*/
-                 /* stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',*/
-                 /* collapseSuperGroups: true,*/
-                 /* trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'*/
+                 /* {name:                 'Genemap',*/
+                 /* control: ironControl,*/
+                 /* tier_type:            'rqtl-genotype',*/
+                 /* pinned: true*/
                  /* },*/
+                 {name: 'Genes',
+                  desc: 'Gene structures from GENCODE M2',
+                  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
+                  collapseSuperGroups: true,
+                  trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'
+                 },
                  /* {name: 'Repeats',*/
                  /* desc: 'Repeat annotation from UCSC', */
                  /* bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',*/
                  /* stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'*/
                  /* },*/
-                 /* {name: 'SNP density',*/
-                 /* uri: 'http://192.168.56.100:8880/snp/test.bed.gz',*/
-                 /* tier_type: 'tabix',*/
-                 /* stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',*/
-                 /* payload: 'bed'*/
-                 /* },*/
+                 {name: 'SNP density',
+                  uri: 'http://192.168.56.100:8880/snp/test.bed.gz',
+                  tier_type: 'tabix',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',
+                  payload: 'bed'
+                 },
                  {name: 'QTL',
                   tier_type: 'qtl',
                   uri: 'http://192.168.56.100:8880/qtl/lod.csv',
                   stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml',
                   rulers: [{ value: 0.55, min: 0, max: 1, width: 3, color: 'red' }]
+                 },
+                 {name: 'Additive effect',
+                  tier_type: 'qtl',
+                  uri: 'http://192.168.56.100:8880/qtl/add.csv',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/additive-stylesheet.xml',
                  }
                  },*/
                  {name: 'Multi',
