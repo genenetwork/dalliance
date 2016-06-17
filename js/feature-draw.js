@@ -1221,6 +1221,8 @@ function makeLineGlyph(features, style, tier) {
                 curGlyphPoints.push(prevPoint.y);
             }
             prevSign = curSign;
+        } else {
+            curSign = 1;
         }
 
         var py = (height - (sc * curSign));
