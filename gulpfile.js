@@ -5,6 +5,11 @@ var rename = require('gulp-rename');
 var buffer = require('vinyl-buffer');
 var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
+var babel = require('gulp-babel');
+var babelify = require('babelify');
+
+require("babel-polyfill");
+
 
 
 gulp.task('build-worker', function() {
@@ -13,6 +18,8 @@ gulp.task('build-worker', function() {
         debug: true,
         nobuiltins: true
     })
+        .transform("babelify", {presets: ["es2015"],
+                                extensions: ".es6"})
         .bundle()
         .pipe(source('worker-all.js'))
         .pipe(buffer())
@@ -28,10 +35,11 @@ gulp.task('build-main', function() {
         debug: true,
         nobuiltins: true
     })
+        .transform("babelify", {presets: ["es2015"],
+                                extensions: ".es6"})
         .bundle()
         .pipe(source('dalliance-all.js'))
         .pipe(buffer())
-        .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('build/'));
 });
@@ -42,6 +50,8 @@ gulp.task('compile-worker', function() {
         debug: true,
         nobuiltins: true
     })
+        .transform("babelify", {presets: ["es2015"],
+                                extensions: ".es6"})
         .bundle()
         .pipe(source('worker-all.js'))
         .pipe(buffer())
@@ -57,6 +67,8 @@ gulp.task('compile-main', function() {
         debug: true,
         nobuiltins: true
     })
+        .transform("babelify", {presets: ["es2015"],
+                                extensions: ".es6"})
         .bundle()
         .pipe(source('dalliance-all.js'))
         .pipe(buffer())
