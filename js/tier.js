@@ -35,9 +35,6 @@ if (typeof(require) !== 'undefined') {
     var Promise = require('es6-promise').Promise;
 
     var sortFeatures = require('./features').sortFeatures;
-
-    var rulers = require('./rulers.js');
-    var Ruler = rulers.Ruler;
 }
 
 var __tier_idSeed = 0;
@@ -292,9 +289,6 @@ DasTier.prototype.draw = function() {
     }
     this.paint();
 
-    if (this.dasSource.rulers instanceof Array) {
-        rulers.paintRulers(this, this.dasSource.rulers);
-    }
 
     this.originHaxx = 0;
     this.browser.arrangeTiers();
