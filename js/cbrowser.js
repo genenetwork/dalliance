@@ -43,6 +43,8 @@ if (typeof(require) !== 'undefined') {
     var sourcesAreEqualModuloStyle = sourcecompare.sourcesAreEqualModuloStyle;
     var sourceDataURI = sourcecompare.sourceDataURI;
     var sourceStyleURI = sourcecompare.sourceStyleURI;
+
+    var newRenderer = require('./new-renderer.es6').newRenderer;
 }
 
 function Region(chr, min, max) {
@@ -55,6 +57,9 @@ function Browser(opts) {
     if (!opts) {
         opts = {};
     }
+
+    // this.defaultRenderer = defaultTierRenderer;
+    this.defaultRenderer = newRenderer;
 
     this.prefix = '//www.biodalliance.org/release-0.14/';
 
@@ -1237,9 +1242,9 @@ Browser.prototype.withPreservedSelection = function(f) {
 }
 
 Browser.prototype.refreshTier = function(tier, tierCallback) {
-    tierCallback = tierCallback || defaultTierRenderer;
+    var renderCallback = tierCallback || this.defaultRenderer || defaultTierRenderer;
     if (this.knownSpace) {
-        this.knownSpace.invalidate(tier, tierCallback);
+        this.knownSpace.invalidate(tier, renderCallback);
     }
 }
 
@@ -1346,8 +1351,7 @@ Browser.prototype.arrangeTiers = function() {
 }
 
 Browser.prototype.refresh = function() {
-
-    this.retrieveTierData(this.tiers, defaultTierRenderer);
+    this.retrieveTierData(this.tiers, this.defaultRenderer);
     this.drawOverlays();
     this.positionRuler();
 
@@ -1399,8 +1403,14 @@ Browser.prototype.retrieveTierData = function(tiers, tierRendererCallback) {
         this.drawnStart = outerDrawnStart;
         this.drawnEnd = outerDrawnEnd;
     }
+
     // send in the subset of tiers to retrieve.
-    this.knownSpace.retrieveFeatures(tiers, this.chr, this.drawnStart, this.drawnEnd, scaledQuantRes, tierRendererCallback);
+    this.knownSpace.retrieveFeatures(tiers,
+                                     this.chr,
+                                     this.drawnStart,
+                                     this.drawnEnd,
+                                     scaledQuantRes,
+                                     tierRendererCallback);
 }
 
 function setSources(msh, availableSources, maybeMapping) {
