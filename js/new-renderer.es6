@@ -7,12 +7,9 @@ import { drawSeqTier } from "./sequence-draw.js";
 
 export { renderTier, drawTier };
 
-function newRenderer(status, tier) {
-    if (typeof(tier.dasSource.draw) === "function") {
-        tier.dasSource.draw(tier);
-    } else {
-        drawTier(tier);
-    }
+
+function renderTier(status, tier) {
+    drawTier(tier);
     tier.updateStatus(status);
 }
 

@@ -44,7 +44,7 @@ if (typeof(require) !== 'undefined') {
     var sourceDataURI = sourcecompare.sourceDataURI;
     var sourceStyleURI = sourcecompare.sourceStyleURI;
 
-    var newRenderer = require('./new-renderer.es6').newRenderer;
+    var NewRenderer = require('./new-renderer.es6');
 }
 
 function Region(chr, min, max) {
@@ -59,7 +59,7 @@ function Browser(opts) {
     }
 
     // this.defaultRenderer = defaultTierRenderer;
-    this.defaultRenderer = newRenderer;
+    this.defaultRenderer = NewRenderer;
 
     this.prefix = '//www.biodalliance.org/release-0.14/';
 
@@ -834,7 +834,8 @@ Browser.prototype.touchMoveHandler = function(ev) {
             this.scale = this.zoomInitialScale * (sep/this.zoomInitialSep);
             this.viewStart = scp - (cp/this.scale)|0;
             for (var i = 0; i < this.tiers.length; ++i) {
-                this.tiers[i].draw();
+                tiers[i].getRenderer().drawTier(tiers[i]);
+                // this.tiers[i].draw();
             }
         }
         this.zoomLastSep = sep;
@@ -1242,7 +1243,8 @@ Browser.prototype.withPreservedSelection = function(f) {
 }
 
 Browser.prototype.refreshTier = function(tier, tierCallback) {
-    var renderCallback = tierCallback || this.defaultRenderer || defaultTierRenderer;
+    var renderer = tier.getRenderer();
+    var renderCallback = tierCallback || renderer.renderTier;
     if (this.knownSpace) {
         this.knownSpace.invalidate(tier, renderCallback);
     }
@@ -1358,11 +1360,12 @@ Browser.prototype.refresh = function() {
 };
 
 var defaultTierRenderer = function(status, tier) {
-    tier.draw();
-    tier.updateStatus(status);
+    console.log("DEPRECATED!");
+    // tier.draw();
+    // tier.updateStatus(status);
 }
 
-Browser.prototype.retrieveTierData = function(tiers, tierRendererCallback) {
+Browser.prototype.retrieveTierData = function(tiers, tierRenderer) {
     this.notifyLocation();
     var width = (this.viewEnd - this.viewStart) + 1;
     var minExtraW = (100.0/this.scale)|0;
@@ -1410,7 +1413,7 @@ Browser.prototype.retrieveTierData = function(tiers, tierRendererCallback) {
                                      this.drawnStart,
                                      this.drawnEnd,
                                      scaledQuantRes,
-                                     tierRendererCallback);
+                                     tierRenderer.renderTier);
 }
 
 function setSources(msh, availableSources, maybeMapping) {
