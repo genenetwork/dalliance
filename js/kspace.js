@@ -100,7 +100,7 @@ KnownSpace.prototype.bestCacheOverlapping = function(chr, min, max) {
     }
 }
 
-KnownSpace.prototype.retrieveFeatures = function(tiers, chr, min, max, scale, tierCallback) {
+KnownSpace.prototype.retrieveFeatures = function(tiers, chr, min, max, scale) {
     if (scale != scale) {
         throw "retrieveFeatures called with silly scale";
     }
@@ -124,7 +124,7 @@ KnownSpace.prototype.retrieveFeatures = function(tiers, chr, min, max, scale, ti
     this.seqWasFetched = false;
     this.viewCount++;
     
-    this.startFetchesForTiers(tiers, tierCallback);
+    this.startFetchesForTiers(tiers);
     this.pool.notifyRequestsIssued();
 }
     
@@ -161,16 +161,16 @@ function filterFeatures(features, min, max) {
     return ff;
 }
 
-KnownSpace.prototype.invalidate = function(tier, tierCallback) {
+KnownSpace.prototype.invalidate = function(tier) {
     if (!this.pool) {
         return;
     }
 
     this.featureCache[tier] = null;
-    this.startFetchesForTiers([tier], tierCallback);
+    this.startFetchesForTiers([tier]);
 }
 
-KnownSpace.prototype.startFetchesForTiers = function(tiers, tierCallback) {
+KnownSpace.prototype.startFetchesForTiers = function(tiers) {
     var thisB = this;
 
     var awaitedSeq = this.awaitedSeq;
@@ -179,8 +179,9 @@ KnownSpace.prototype.startFetchesForTiers = function(tiers, tierCallback) {
     var gex;
 
     for (var t = 0; t < tiers.length; ++t) {
+        var tierRenderer = tiers[t].browser.getTierRenderer(tiers[t]);
         try {
-            if (this.startFetchesFor(tiers[t], awaitedSeq, tierCallback)) {
+            if (this.startFetchesFor(tiers[t], awaitedSeq)) {
                 needSeq = true;
             }
         } catch (ex) {
@@ -191,7 +192,8 @@ KnownSpace.prototype.startFetchesForTiers = function(tiers, tierCallback) {
             console.log('Error fetching tier source');
             console.log(ex);
             gex = ex;
-            tierCallback(ex, tier);
+            console.log(ex.stack);
+            tierRenderer.renderTier(ex, tier);
         }
     }
 
@@ -232,7 +234,7 @@ KnownSpace.prototype.startFetchesForTiers = function(tiers, tierCallback) {
         throw gex;
 }
 
-KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq, tierCallback) {
+KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq) {
     var thisB = this;
 
     var viewID = this.viewCount;
@@ -255,7 +257,7 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq, tierCallback) 
             cachedFeatures = filterFeatures(cachedFeatures, min, max);
         }
         
-        thisB.provision(tier, baton.chr, intersection(baton.coverage, new Range(min, max)), baton.scale, wantedTypes, cachedFeatures, baton.status, needsSeq ? awaitedSeq : null, tierCallback);
+        thisB.provision(tier, baton.chr, intersection(baton.coverage, new Range(min, max)), baton.scale, wantedTypes, cachedFeatures, baton.status, needsSeq ? awaitedSeq : null);
 
         var availableScales = source.getScales();
         if (baton.scale <= this.scale || !availableScales) {
@@ -267,12 +269,12 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq, tierCallback) 
     if (source.instrument)
         console.log('Starting  fetch ' + viewID + ' (' + min + ', ' + max + ')');
     source.fetch(chr, min, max, this.scale, wantedTypes, this.pool, function(status, features, scale, coverage) {
-        console.log("Status: " + status);
+        // console.log("Status: " + status);
         // console.log("Features: " + features);
-        console.log("Feature 0:");
-        console.log(features[0]);
-        console.log("Scale: " + scale);
-        console.log("Coverage: " + coverage);
+        // console.log("Feature 0:");
+        // console.log(features[0]);
+        // console.log("Scale: " + scale);
+        // console.log("Coverage: " + coverage);
     	if (source.instrument)
     	    console.log('Finishing fetch ' + viewID);
 
@@ -290,15 +292,16 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq, tierCallback) 
         }
 
 	    thisB.latestViews[tier] = viewID;
-        thisB.provision(tier, chr, coverage, scale, wantedTypes, features, status, needsSeq ? awaitedSeq : null, tierCallback);
+        thisB.provision(tier, chr, coverage, scale, wantedTypes, features, status, needsSeq ? awaitedSeq : null);
     }, styleFilters);
     return needsSeq;
 }
 
-KnownSpace.prototype.provision = function(tier, chr, coverage, actualScale, wantedTypes, features, status, awaitedSeq, tierCallback) {
+KnownSpace.prototype.provision = function(tier, chr, coverage, actualScale, wantedTypes, features, status, awaitedSeq) {
+    var tierRenderer = tier.browser.getTierRenderer(tier);
     if (status) {
         tier.setFeatures(chr, coverage, actualScale, [], null);
-        tierCallback(status, tier);
+        tierRenderer.renderTier(status, tier);
     } else {
         var mayDownsample = false;
         var needBaseComposition = false;
@@ -333,11 +336,11 @@ KnownSpace.prototype.provision = function(tier, chr, coverage, actualScale, want
                     features = getBaseCoverage(features, seq, tier.browser.baseColors);
                 }
                 tier.setFeatures(chr, coverage, actualScale, features, seq);
-                tierCallback(status, tier);
+                tierRenderer.renderTier(status, tier);
             });
         } else {
             tier.setFeatures(chr, coverage, actualScale, features);
-            tierCallback(status, tier);
+            tierRenderer.renderTier(status, tier);
         }
     }
 }

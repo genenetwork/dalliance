@@ -44,7 +44,8 @@ if (typeof(require) !== 'undefined') {
     var sourceDataURI = sourcecompare.sourceDataURI;
     var sourceStyleURI = sourcecompare.sourceStyleURI;
 
-    var NewRenderer = require('./new-renderer.es6');
+    var DefaultRenderer = require('./default-renderer.es6');
+    var DummyRenderer = require('./dummy-renderer.es6');
 }
 
 function Region(chr, min, max) {
@@ -58,8 +59,12 @@ function Browser(opts) {
         opts = {};
     }
 
-    // this.defaultRenderer = defaultTierRenderer;
-    this.defaultRenderer = NewRenderer;
+    this.renderers =
+        { 'default': DefaultRenderer,
+          'dummy': DummyRenderer };
+
+    this.defaultRenderer = DefaultRenderer;
+
 
     this.prefix = '//www.biodalliance.org/release-0.14/';
 
@@ -1243,10 +1248,22 @@ Browser.prototype.withPreservedSelection = function(f) {
 }
 
 Browser.prototype.refreshTier = function(tier, tierCallback) {
-    var renderer = tier.getRenderer();
+    var renderer = this.getTierRenderer(tier);
     var renderCallback = tierCallback || renderer.renderTier;
     if (this.knownSpace) {
         this.knownSpace.invalidate(tier, renderCallback);
+    }
+}
+
+Browser.prototype.getTierRenderer = function(tier) {
+    var renderer = tier.dasSource.renderer || this.defaultRenderer;
+    if (typeof(renderer) === 'string') {
+        return this.renderers[renderer];
+    } else if (typeof(renderer.renderTier) === 'function' &&
+               typeof(renderer.drawTier) === 'function') {
+        return renderer;
+    } else {
+        console.log("Tier doesn't have a renderer");
     }
 }
 
@@ -1353,7 +1370,8 @@ Browser.prototype.arrangeTiers = function() {
 }
 
 Browser.prototype.refresh = function() {
-    this.retrieveTierData(this.tiers, this.defaultRenderer);
+    var browser = this;
+    this.retrieveTierData(this.tiers);
     this.drawOverlays();
     this.positionRuler();
 
@@ -1365,7 +1383,8 @@ var defaultTierRenderer = function(status, tier) {
     // tier.updateStatus(status);
 }
 
-Browser.prototype.retrieveTierData = function(tiers, tierRenderer) {
+// Browser.prototype.retrieveTierData = function(tiers, tierRenderer) {
+Browser.prototype.retrieveTierData = function(tiers) {
     this.notifyLocation();
     var width = (this.viewEnd - this.viewStart) + 1;
     var minExtraW = (100.0/this.scale)|0;
@@ -1412,8 +1431,8 @@ Browser.prototype.retrieveTierData = function(tiers, tierRenderer) {
                                      this.chr,
                                      this.drawnStart,
                                      this.drawnEnd,
-                                     scaledQuantRes,
-                                     tierRenderer.renderTier);
+                                     scaledQuantRes);
+                                     // tierRenderer);
 }
 
 function setSources(msh, availableSources, maybeMapping) {
