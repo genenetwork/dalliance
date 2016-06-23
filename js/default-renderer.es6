@@ -8,7 +8,7 @@ import { drawSeqTier } from "./sequence-draw.js";
 import { OverlayLabelCanvas } from "./glyphs.js";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, paint };
+export { renderTier, drawTier, prePaint, paint };
 
 
 function renderTier(status, tier) {
@@ -31,8 +31,7 @@ function drawTier(tier) {
         canvas.scale(2, 2);
     }
 
-    // tier.paint();
-
+    prePaint(tier, canvas, retina, true);
     paint(tier, canvas, retina, true);
     tier.drawOverlay();
     tier.paintQuant();
@@ -45,11 +44,12 @@ function drawTier(tier) {
     tier.browser.arrangeTiers();
 }
 
-
-function paint(tier, canvas, retina, clear=true) {
+function prePaint(tier, canvas, retina, clear=true) {
     let subtiers = tier.subtiers;
+    console.log(subtiers);
     if (!subtiers)
         return;
+
 
     let desiredWidth = tier.browser.featurePanelWidth + 2000;
     if (retina) {
@@ -118,7 +118,9 @@ function paint(tier, canvas, retina, clear=true) {
             canvas.fillRect(min, 0, max - min, lh);
         });
     }
+}
 
+function paint(tier, canvas, retina, clear=true) {
     let overlayLabelCanvas = new OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
     canvas.translate(offset, tier.padding);
