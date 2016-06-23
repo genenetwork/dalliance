@@ -1,11 +1,11 @@
 /* jshint esversion: 6 */
 "use strict";
 
-import { drawFeatureTier,
-         drawSeqTier } from "./feature-draw";
+import { drawFeatureTier } from "./feature-draw";
 
+import { drawSeqTier } from "./sequence-draw.js";
 
-export { newRenderer };
+export { renderTier, drawTier };
 
 function newRenderer(status, tier) {
     if (typeof(tier.dasSource.draw) === "function") {
