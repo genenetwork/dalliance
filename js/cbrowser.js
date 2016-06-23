@@ -46,6 +46,7 @@ if (typeof(require) !== 'undefined') {
 
     var DefaultRenderer = require('./default-renderer.es6');
     var DummyRenderer = require('./dummy-renderer.es6');
+    var MultiRenderer = require('./multi-renderer.es6');
 }
 
 function Region(chr, min, max) {
@@ -61,7 +62,8 @@ function Browser(opts) {
 
     this.renderers =
         { 'default': DefaultRenderer,
-          'dummy': DummyRenderer };
+          'dummy': DummyRenderer,
+          'multi': MultiRenderer };
 
     this.defaultRenderer = DefaultRenderer;
 
