@@ -59,160 +59,140 @@ function drawTier(tier) {
     tier.browser.arrangeTiers();
 }
 
+function glyphsForGroup(canvas, features, y, groupElement, tier) {
+    let gstyle = tier.styleForFeature(groupElement);
+    let label;
+    let labelWanted = false;
 
-function glyphsForGroup(features, y, groupElement, tier, connectorType) {
-    var gstyle = tier.styleForFeature(groupElement);
-    var label;
-    var labelWanted = false;
+    let glyphs = [];
+    let strand = null;
 
-    var glyphs = [];
-    var strand = null;
-    for (var i = 0; i < features.length; ++i) {
-        var f = features[i];
-        if (f.orientation && strand==null) {
+    features.forEach(f => {
+        if (f.orientation && strand === null) {
             strand = f.orientation;
         }
-         if (!label && f.label) {
+
+        if (!label && f.label) {
             label = f.label;
         }
 
-        var style = tier.styleForFeature(f);
-        if (!style) {
-            continue;
-        }
-        if (f.parts) {  // FIXME shouldn't really be needed
-            continue;
-        }
-        if (isDasBooleanTrue(style.LABEL))
-            labelWanted = true;
+        let style = tier.styleForFeature(f);
+        if (style && !f.parts) {
+            if (isDasBooleanTrue(style.LABEL))
+                labelWanted = true;
 
-        var g = glyphForFeature(f, 0, style, tier, null, true);
-        if (g) {
-            glyphs.push(g);
+            let glyph = glyphForFeature(canvas, f, 0, style, tier, null, true);
+            if (glyph)
+                glyphs.push(glyph);
         }
-    }
+    });
 
-    if (glyphs.length == 0)
+    if (glyphs.length === 0)
         return null;
-    
-    var connector = 'flat';
+
+    let connector = 'flat';
     if (gstyle && gstyle.glyph === 'LINE') {
         // Stick with flat...
     } else {
         if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
-            if (strand === '+') {
-                connector = 'collapsed+';
-            } else if (strand === '-') {
-                connector = 'collapsed-';
+            if (strand === '+' || strand === '-') {
+                connector = 'collapsed' + strand;
             }
         } else {
-            if (strand === '+') {
-                connector = 'hat+';
-            } else if (strand === '-') {
-                connector = 'hat-';
+            if (strand === '+' || strand === '-') {
+                connector = 'hat' + strand;
             }
         }
-    }   
+    }
 
-    var labelText = null;
-    if ((label && labelWanted) || (gstyle && (isDasBooleanTrue(gstyle.LABEL) || isDasBooleanTrue(gstyle.LABELS)))) {  // HACK, LABELS should work.
+    let labelText = null;
+    if ((label && labelWanted) ||
+        (gstyle && (isDasBooleanTrue(gstyle.LABEL)
+                    || isDasBooleanTrue(gstyle.LABELS)))) {  // HACK, LABELS should work.
         labelText = groupElement.label || label;
     }
 
-    var gg = new GroupGlyph(glyphs, connector);
+    let groupGlyph = new Glyphs.GroupGlyph(glyphs, connector);
     if (labelText) {
         if (strand === '+') {
             labelText = '>' + labelText;
         } else if (strand === '-') {
             labelText = '<' + labelText;
         }
-        gg = new LabelledGlyph(GLOBAL_GC, gg, labelText, false);
+        groupGlyph = new Glyphs.LabelledGlyph(canvas, groupGlyph, labelText, false);
     }
-    gg.bump = true;
-    return gg;
+    groupGlyph.bump = true;
+    return groupGlyph;
 }
 
-function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
-{
-    function getRefSeq(tier, min, max) {
-        var refSeq = null;
-        if (tier.currentSequence) {
-            var csStart = tier.currentSequence.start|0;
-            var csEnd = tier.currentSequence.end|0;
-            if (csStart <= max && csEnd >= min) {
-                var sfMin = Math.max(min, csStart);
-                var sfMax = Math.min(max, csEnd);
+function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) {
 
-                refSeq = tier.currentSequence.seq.substr(sfMin - csStart, sfMax - sfMin + 1);
-                while (min < sfMin) {
-                    refSeq = 'N' + refSeq;
-                    sfMin--;
-                }
-                while (max > sfMax) {
-                    refSeq = refSeq + 'N';
-                    sfMax++;
-                }
-            }
-        }
-        return refSeq;
-    }
+    let scale = tier.browser.scale;
+    let origin = tier.browser.viewStart;
+    let gtype = style.glyph || 'BOX';
 
-    var scale = tier.browser.scale, origin = tier.browser.viewStart;
-    var gtype = style.glyph || 'BOX';
-    var glyph;
+    let min = feature.min;
+    let max = feature.max;
+    let strand = feature.orientation;
+    let score = feature.score;
+    let label = feature.label || feature.id;
 
-    var min = feature.min;
-    var max = feature.max;
-    var type = feature.type;
-    var strand = feature.orientation;
-    var score = feature.score;
-    var label = feature.label || feature.id;
+    let minPos = (min - origin) * scale;
+    let rawMaxPos = ((max - origin + 1) * scale);
+    let maxPos = Math.max(rawMaxPos, minPos + 1);
 
-    var minPos = (min - origin) * scale;
-    var rawMaxPos = ((max - origin + 1) * scale);
-    var maxPos = Math.max(rawMaxPos, minPos + 1);
+    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
+    let requiredHeight = height * 1.0;
+    let bump = style.BUMP && isDasBooleanTrue(style.BUMP);
 
-    var height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-    var requiredHeight = height = 1.0 * height;
-    var bump = style.BUMP && isDasBooleanTrue(style.BUMP);
+    let glyph;
+    let quant;
 
-    var gg, quant;
+    // Create one of these glyphs
+    if (gtype === 'CROSS' ||
+        gtype === 'EX' ||
+        gtype === 'TRIANGLE' ||
+        gtype === 'DOT' ||
+        gtype === 'SQUARE' ||
+        gtype === 'STAR' ||
+        gtype === 'PLIMSOLL') {
 
-    if (gtype === 'CROSS' || gtype === 'EX' || gtype === 'TRIANGLE' || gtype === 'DOT' || gtype === 'SQUARE' || gtype === 'STAR' || gtype === 'PLIMSOLL') {
-        var stroke = style.FGCOLOR || 'black';
-        var fill = style.BGCOLOR || 'none';
-        var outline = style.STROKECOLOR;
+
+        let stroke = style.FGCOLOR || 'black';
+        let fill = style.BGCOLOR || 'none';
+        let outline = style.STROKECOLOR;
 
         if (style.BGITEM && feature.itemRgb) {
             stroke = feature.itemRgb;
         } else if (isDasBooleanTrue(style.COLOR_BY_SCORE2)) {
-            var grad = style.BGGRAD || style._gradient;
+            let grad = style.BGGRAD || style._gradient;
             if (!grad) {
                 grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
                 style._gradient = grad;
             }
 
-            var sc2 = feature.score2;
-            if (sc2 != undefined || !stroke) {
-                sc2 = sc2 || 0;
+            let score2 = feature.score2;
+            if (score2 !== undefined || !stroke) {
+                score2 = score2 || 0;
 
-                var smin2 = style.MIN2 ? (1.0 * style.MIN2) : 0.0;
-                var smax2 = style.MAX2 ? (1.0 * style.MAX2) : 1.0;
-                var relScore2 = ((1.0 * sc2) - smin2) / (smax2-smin2);
+                let smin2 = style.MIN2 ? (1.0 * style.MIN2) : 0.0;
+                let smax2 = style.MAX2 ? (1.0 * style.MAX2) : 1.0;
+                let relScore2 = ((1.0 * score2) - smin2) / (smax2-smin2);
 
-                var step = (relScore2*grad.length)|0;
-                if (step < 0) step = 0;
-                if (step >= grad.length) step = grad.length - 1;
+                let step = (relScore2*grad.length) | 0;
+                step = Math.min(step, 0);
+                step = Math.max(step, grad.length - 1);
+                if (step >= grad.length)
+                    step = grad.length - 1;
                 stroke = grad[step];
             }
         }
 
+        // TODO: This is probably completely pointless
+        height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
+        requiredHeight = height * 1.0;
 
-
-        var height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-        requiredHeight = height = 1.0 * height;
-
-        var size = style.SIZE || height;
+        let size = style.SIZE || height;
         if (style.RSIZE) {
             size = (1.0 * style.RSIZE) * height;
         }
@@ -221,58 +201,42 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             if (size < (1.0 * style.STROKETHRESHOLD))
                 outline = null;
         }
-        
-        size = 1.0 * size;
 
-        var mid = (minPos + maxPos)/2;
-        var hh = size/2;
+        // size = 1.0 * size;
 
-        var mark;
-        var bMinPos = minPos, bMaxPos = maxPos;
+        let mid = (minPos + maxPos)/2;
 
         if (gtype === 'EX') {
-            gg = new ExGlyph(mid, size, stroke);
+            glyph = new Glyphs.ExGlyph(mid, size, stroke);
         } else if (gtype === 'TRIANGLE') {
             var dir = style.DIRECTION || 'N';
             var width = style.LINEWIDTH || size;
-            gg = new TriangleGlyph(mid, size, dir, width, stroke, outline);
+            glyph = new Glyphs.TriangleGlyph(mid, size, dir, width, stroke, outline);
         } else if (gtype === 'DOT') {
-            gg = new DotGlyph(mid, size, stroke, outline);
+            glyph = new Glyphs.DotGlyph(mid, size, stroke, outline);
         } else if (gtype === 'PLIMSOLL') {
-            gg = new PlimsollGlyph(mid, size, 0.2 * size, stroke, outline);
+            glyph = new Glyphs.PlimsollGlyph(mid, size, 0.2 * size, stroke, outline);
         } else if (gtype === 'SQUARE') {
-            gg = new BoxGlyph(mid - hh, 0, size, size, stroke, outline);
+            glyph = new Glyphs.BoxGlyph(mid - size/2, 0, size, size, stroke, outline);
         } else if (gtype === 'STAR') {
-            var points = 5;
-            if (style.POINTS) 
+            let points = 5;
+            if (style.POINTS)
                 points = style.POINTS | 0;
-            gg = new StarGlyph(mid, hh, points, stroke, outline);
+            glyph = new Glyphs.StarGlyph(mid, size/2, points, stroke, outline);
         } else {
-            gg = new CrossGlyph(mid, size, stroke);
+            glyph = new Glyphs.CrossGlyph(mid, size, stroke);
         }
 
         if (fill && fill != 'none' && (maxPos - minPos) > 5) {
-            var bgg = new BoxGlyph(minPos, 0, (maxPos - minPos), size, fill);
-            gg = new GroupGlyph([bgg, gg]);
+            let boxGlyph = new Glyphs.BoxGlyph(minPos, 0, (maxPos - minPos), size, fill);
+            glyph = new Glyphs.GroupGlyph([boxGlyph, glyph]);
         }
 
         if (isDasBooleanTrue(style.SCATTER)) {
-            var smin = tier.quantMin(style);
-            var smax = tier.quantMax(style);
+            let [smin, smax] = getScoreMinMax(tier, style);
 
-            if (!smax) {
-                if (smin < 0) {
-                    smax = 0;
-                } else {
-                    smax = 10;
-                }
-            }
-            if (!smin) {
-                smin = 0;
-            }
-
-            var relScore = ((1.0 * score) - smin) / (smax-smin);
-            var relOrigin = (-1.0 * smin) / (smax - smin);
+            let relScore = ((1.0 * score) - smin) / (smax-smin);
+            let relOrigin = (-1.0 * smin) / (smax - smin);
 
             if (relScore < 0.0 || relScore > 1.0) {
                 // Glyph is out of bounds.
@@ -287,44 +251,34 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
                     height = Math.max(1, (relScore - relOrigin) * requiredHeight);
                     y = y + ((1.0 - relOrigin) * requiredHeight);
                 }
-                
+
                 quant = {min: smin, max: smax};
 
-                var heightFudge = 0;
-                var featureLabel;
+                let heightFudge = 0;
+                let featureLabel;
                 if (typeof(feature.forceLabel) !== 'undefined')
                     featureLabel = feature.forceLabel;
                 else
                     featureLabel = style.LABEL;
 
                 if (isDasBooleanNotFalse(featureLabel) && label && !noLabel) {
-                    gg = new LabelledGlyph(GLOBAL_GC, gg, label, true, null, featureLabel == 'above' ? 'above' : 'below');
+                    glyph = new Glyphs.LabelledGlyph(canvas, glyph, label,
+                                                     true, null,
+                                                     featureLabel == 'above' ? 'above' : 'below');
                     if (featureLabel == 'above') {
-                        heightFudge = gg.textHeight + 2;
+                        heightFudge = glyph.textHeight + 2;
                     }
                     noLabel = true;
                 }
-                gg = new TranslatedGlyph(gg, 0, y - hh - heightFudge, requiredHeight);
+                glyph = new Glyphs.TranslatedGlyph(glyph, 0, y - (size / 2) - heightFudge, requiredHeight);
             }
         }
     } else if (gtype === 'HISTOGRAM' || gtype === 'GRADIENT' && score !== 'undefined') {
         var centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
-        var smin = tier.quantMin(style);
-        var smax = tier.quantMax(style);
+        let [smin, smax] = getScoreMinMax(tier, style);
 
-        if (!smax) {
-            if (smin < 0) {
-                smax = 0;
-            } else {
-                smax = 10;
-            }
-        }
-        if (!smin) {
-            smin = 0;
-        }
-
-        if ((1.0 * score) < (1.0 *smin)) {
+        if ((1.0 * score) < (1.0 * smin)) {
             score = smin;
         }
         if ((1.0 * score) > (1.0 * smax)) {
@@ -340,18 +294,20 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             smax = tmax - ((tmax - tmin) / 2);
         }
 
-        var relScore = ((1.0 * score) - smin) / (smax-smin);
-        var relOrigin = (-1.0 * smin) / (smax - smin);
+        let relScore = ((1.0 * score) - smin) / (smax-smin);
+        let relOrigin = (-1.0 * smin) / (smax - smin);
 
         if (gtype === 'HISTOGRAM') {
             if (relScore >= relOrigin) {
                 height = (relScore - Math.max(0, relOrigin)) * requiredHeight;
                 y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight) - height;
+
                 if (centerOnAxis)
                     y += height / 2;
             } else {
                 height = (Math.max(0, relOrigin) - relScore) * requiredHeight;
                 y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight);
+
                 if (centerOnAxis)
                     y -= height / 2;
             }
@@ -361,104 +317,113 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
                 quant = {min: smin, max: smax};
         }
 
-        var stroke = style.FGCOLOR || null;
-        var fill = style.BGCOLOR || style.COLOR1 || 'green';
+        let stroke = style.FGCOLOR || null;
+        let fill = style.BGCOLOR || style.COLOR1 || 'green';
         if (style.BGITEM && feature.itemRgb)
             fill = feature.itemRgb;
         var alpha = style.ALPHA ? (1.0 * style.ALPHA) : null;
 
         if (style.BGGRAD) {
-            var grad = style.BGGRAD;
-            var step = (relScore*grad.length)|0;
+            let grad = style.BGGRAD;
+            let step = (relScore*grad.length)|0;
             if (step < 0) step = 0;
             if (step >= grad.length) step = grad.length - 1;
             fill = grad[step];
         }
+
         if (style.COLOR2) {
-            var grad = style._gradient;
+            let grad = style._gradient;
             if (!grad) {
                 grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
                 style._gradient = grad;
             }
 
-            var step = (relScore*grad.length)|0;
-            if (step < 0) step = 0;
-            if (step >= grad.length) step = grad.length - 1;
+            let step = (relScore*grad.length) | 0;
+            step = Math.min(step, 0);
+            step = Math.max(step, grad.length - 1);
             fill = grad[step];
         }
 
-        gg = new BoxGlyph(minPos, y, (maxPos - minPos), height, fill, stroke, alpha);
-        gg = new TranslatedGlyph(gg, 0, 0, requiredHeight);
+        let tempGlyph = new Glyphs.BoxGlyph(minPos, y, (maxPos - minPos), height, fill, stroke, alpha);
+        glyph = new Glyphs.TranslatedGlyph(tempGlyph, 0, 0, requiredHeight);
+
     } else if (gtype === 'HIDDEN') {
-        gg = new PaddedGlyph(null, minPos, maxPos);
+        glyph = new Glyphs.PaddedGlyph(null, minPos, maxPos);
         noLabel = true;
+
     } else if (gtype === 'ARROW') {
-        var color = style.FGCOLOR || 'purple';
-        var parallel = isDasBooleanTrue(style.PARALLEL);
-        var sw = isDasBooleanTrue(style.SOUTHWEST);
-        var ne = isDasBooleanTrue(style.NORTHEAST);
-        gg = new ArrowGlyph(minPos, maxPos, height, color, parallel, sw, ne);
+        let color = style.FGCOLOR || 'purple';
+        let parallel = isDasBooleanTrue(style.PARALLEL);
+        let sw = isDasBooleanTrue(style.SOUTHWEST);
+        let ne = isDasBooleanTrue(style.NORTHEAST);
+        glyph = new Glyphs.ArrowGlyph(minPos, maxPos, height, color, parallel, sw, ne);
+
     } else if (gtype === 'ANCHORED_ARROW') {
-        var stroke = style.FGCOLOR || 'none';
-        var fill = style.BGCOLOR || 'green';
-        gg = new AArrowGlyph(minPos, maxPos, height, fill, stroke, strand);
-        gg.bump = true;
+        let stroke = style.FGCOLOR || 'none';
+        let fill = style.BGCOLOR || 'green';
+        glyph = new Glyphs.AArrowGlyph(minPos, maxPos, height, fill, stroke, strand);
+        glyph.bump = true;
+
     } else if (gtype === 'SPAN') {
-        var stroke = style.FGCOLOR || 'black';
-        gg = new SpanGlyph(minPos, maxPos, height, stroke);
+        let stroke = style.FGCOLOR || 'black';
+        glyph = new Glyphs.SpanGlyph(minPos, maxPos, height, stroke);
+
     } else if (gtype === 'LINE') {
-        var stroke = style.FGCOLOR || 'black';
-        var lineStyle = style.STYLE || 'solid';
-        gg = new LineGlyph(minPos, maxPos, height, lineStyle, strand, stroke);
+        let stroke = style.FGCOLOR || 'black';
+        let lineStyle = style.STYLE || 'solid';
+        glyph = new Glyphs.LineGlyph(minPos, maxPos, height, lineStyle, strand, stroke);
+
     } else if (gtype === 'PRIMERS') {
-        var stroke = style.FGCOLOR || 'black';
-        var fill = style.BGCOLOR || 'red';
-        gg = new PrimersGlyph(minPos, maxPos, height, fill, stroke);
+        let stroke = style.FGCOLOR || 'black';
+        let fill = style.BGCOLOR || 'red';
+        glyph = new Glyphs.PrimersGlyph(minPos, maxPos, height, fill, stroke);
+
     } else if (gtype === 'TEXT') {
-        var string = style.STRING || 'text';
-        var fill = style.FGCOLOR || 'black';
-        gg = new TextGlyph(GLOBAL_GC, minPos, maxPos, height, fill, string);
+        let string = style.STRING || 'text';
+        let fill = style.FGCOLOR || 'black';
+        glyph = new Glyphs.TextGlyph(canvas, minPos, maxPos, height, fill, string);
+
     } else if (gtype === 'TOOMANY') {
-        var stroke = style.FGCOLOR || 'gray';
-        var fill = style.BGCOLOR || 'orange';
-        gg = new TooManyGlyph(minPos, maxPos, height, fill, stroke);
+        let stroke = style.FGCOLOR || 'gray';
+        let fill = style.BGCOLOR || 'orange';
+        glyph = new Glyphs.TooManyGlyph(minPos, maxPos, height, fill, stroke);
+
     } else if (gtype === 'POINT') {
-        var height = tier.forceHeight || style.HEIGHT || 30;
-        var smin = tier.quantMin(style);
-        var smax = tier.quantMax(style);
-        var yscale = ((1.0 * height) / (smax - smin));
-        var relScore = ((1.0 * score) - smin) / (smax-smin);
-        var sc = ((score - (1.0*smin)) * yscale)|0;
+        let height = tier.forceHeight || style.HEIGHT || 30;
+        let [smin, smax] = getScoreMinMax(tier, style);
+        let yscale = ((1.0 * height) / (smax - smin));
+        let relScore = ((1.0 * score) - smin) / (smax-smin);
+        let sc = ((score - (1.0*smin)) * yscale)|0;
         quant = {min: smin, max: smax};
 
-        var fill = style.FGCOLOR || style.COLOR1 || 'black';
+        let fill = style.FGCOLOR || style.COLOR1 || 'black';
         if (style.COLOR2) {
-            var grad = style._gradient;
+            let grad = style._gradient;
             if (!grad) {
                 grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
                 style._gradient = grad;
             }
 
-            var step = (relScore*grad.length)|0;
+            let step = (relScore*grad.length)|0;
             if (step < 0) step = 0;
             if (step >= grad.length) step = grad.length - 1;
             fill = grad[step];
-        } 
+        }
 
-        gg = new PointGlyph((minPos + maxPos)/2, height-sc, height, fill);
+        glyph = new Glyphs.PointGlyph((minPos + maxPos)/2, height-sc, height, fill);
     } else if (gtype === '__SEQUENCE') {
-        var rawseq = feature.seq;
-        var seq = rawseq;
-        var rawquals = feature.quals;
-        var quals = rawquals;
-        var insertionLabels = isDasBooleanTrue(style.__INSERTIONS);
+        let rawseq = feature.seq;
+        let seq = rawseq;
+        let rawquals = feature.quals;
+        let quals = rawquals;
+        let insertionLabels = isDasBooleanTrue(style.__INSERTIONS);
 
-        var indels = [];
+        let indels = [];
         if (feature.cigar) {
-            var ops = parseCigar(feature.cigar);
-            seq = ''
+            let ops = parseCigar(feature.cigar);
+            seq = '';
             quals = '';
-            var cursor = 0;
+            let cursor = 0;
             for (var ci = 0; ci < ops.length; ++ci) {
                 var co = ops[ci];
                 if (co.op == 'M') {
@@ -472,9 +437,9 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
                     }
                 } else if (co.op == 'I') {
                     var inseq =  rawseq.substr(cursor, co.cnt);
-                    var ig = new TriangleGlyph(minPos + (seq.length*scale), 5, 'S', 5, tier.browser.baseColors['I']);
+                    var ig = new Glyphs.TriangleGlyph(minPos + (seq.length*scale), 5, 'S', 5, tier.browser.baseColors['I']);
                     if (insertionLabels)
-                        ig = new LabelledGlyph(GLOBAL_GC, ig, inseq, false, 'center', 'above', '7px sans-serif');
+                        ig = new Glyphs.LabelledGlyph(canvas, ig, inseq, false, 'center', 'above', '7px sans-serif');
                     ig.feature = {label: 'Insertion: ' + inseq, type: 'insertion', method: 'insertion'};
                     indels.push(ig);
 
@@ -505,7 +470,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
         if (style.__disableQuals)
             quals = false;
         
-        gg = new SequenceGlyph(
+        glyph = new Glyphs.SequenceGlyph(
             tier.browser.baseColors, 
             strandColor, 
             minPos, 
@@ -519,128 +484,161 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             tier.scaleVertical
         );
         if (insertionLabels)
-            gg = new TranslatedGlyph(gg, 0, 7);
+            glyph = new Glyphs.TranslatedGlyph(glyph, 0, 7);
         if (indels.length > 0) {
-            indels.splice(0, 0, gg);
-            gg = new GroupGlyph(indels);
+            indels.splice(0, 0, glyph);
+            glyph = new Glyphs.GroupGlyph(indels);
         }
     } else if (gtype === '__INSERTION') {
-        var ig = new TriangleGlyph(minPos, 5, 'S', 5, tier.browser.baseColors['I']);
-        gg = new LabelledGlyph(GLOBAL_GC, ig, feature.insertion || feature.altAlleles[0], false, 'center', 'above', '7px sans-serif');
+        let ig = new Glyphs.TriangleGlyph(minPos, 5, 'S', 5, tier.browser.baseColors['I']);
+        glyph = new Glyphs.LabelledGlyph(canvas, ig, feature.insertion || feature.altAlleles[0], false, 'center', 'above', '7px sans-serif');
         if ((maxPos - minPos) > 1) {
             var fill = style.BGCOLOR || style.COLOR1 || 'green';
-            var bg = new BoxGlyph(minPos, 5, (maxPos - minPos), height, fill, stroke);
-            gg = new GroupGlyph([bg, gg]);
+            var bg = new Glyphs.BoxGlyph(minPos, 5, (maxPos - minPos), height, fill, stroke);
+            glyph = new Glyphs.GroupGlyph([bg, glyph]);
         }
     } else if (gtype === '__NONE') {
         return null;
     } else /* default to BOX */ {
-        var stroke = style.FGCOLOR || null;
-        var fill = style.BGCOLOR || style.COLOR1 || 'green';
+        let stroke = style.FGCOLOR || null;
+        let fill = style.BGCOLOR || style.COLOR1 || 'green';
         if (style.BGITEM && feature.itemRgb)
             fill = feature.itemRgb;
-        var scale = (maxPos - minPos) / (max - min);
+        let scale = (maxPos - minPos) / (max - min);
         if (feature.type == 'translation' &&
             (feature.method == 'protein_coding' || feature.readframeExplicit) &&
             (!feature.tags || feature.tags.indexOf('cds_start_NF') < 0 || feature.readframeExplicit) &&
             (!tier.dasSource.collapseSuperGroups || tier.bumped)
             && scale >= 0.5) {
-            var refSeq = getRefSeq(tier, min, max);
-            gg = new AminoAcidGlyph(minPos, maxPos, height, fill, refSeq, feature.orientation, feature.readframe);    
+            let refSeq = getRefSeq(tier, min, max);
+            glyph = new Glyphs.AminoAcidGlyph(minPos,
+                                           maxPos,
+                                           height,
+                                           fill,
+                                           refSeq,
+                                           feature.orientation,
+                                           feature.readframe);
         } else {
-            gg = new BoxGlyph(minPos, 0, (maxPos - minPos), height, fill, stroke);
+            glyph = new Glyphs.BoxGlyph(minPos, 0, (maxPos - minPos),
+                                     height, fill, stroke);
         }
-        // gg.bump = true;
     }
 
-    if ((isDasBooleanTrue(style.LABEL) || feature.forceLabel) && label && !noLabel) {
-        gg = new LabelledGlyph(GLOBAL_GC, gg, label, false);
+    if ((isDasBooleanTrue(style.LABEL) || feature.forceLabel) &&
+        label && !noLabel) {
+        glyph = new Glyphs.LabelledGlyph(canvas, glyph, label, false);
     }
 
     if (bump) {
-        gg.bump = true;
+        glyph.bump = true;
     }
 
-    gg.feature = feature;
+    glyph.feature = feature;
+
+    if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
+        quant = null;
     if (quant) {
-        gg.quant = quant;
+        glyph.quant = quant;
     }
 
     if (style.ZINDEX) {
-        gg.zindex = style.ZINDEX | 0;
+        glyph.zindex = style.ZINDEX | 0;
     }
 
-    return gg;
+    return glyph;
 }
 
-function drawFeatureTier(tier)
+function drawFeatureTier(tier, canvas)
 {
-    var start = Date.now()|0;
-    GLOBAL_GC = tier.viewport.getContext('2d'); // Should only be used for metrics.
+    // why
+    var MIN_PADDING = 3;
     if (typeof(tier.dasSource.padding) === 'number')
         tier.padding = tier.dasSource.padding;
     else
         tier.padding = MIN_PADDING;
-    
+
+    // this can be done better right
     if (typeof(tier.dasSource.scaleVertical) === 'boolean')
         tier.scaleVertical = tier.dasSource.scaleVertical;
     else
         tier.scaleVertical = false;
 
     var glyphs = [];
-    var specials = false;
 
     // group by style
     var gbsFeatures = {};
+    // so group by style styles???
     var gbsStyles = {};
 
-    for (var uft in tier.ungroupedFeatures) {
-        var ufl = tier.ungroupedFeatures[uft];
-        
-        for (var pgid = 0; pgid < ufl.length; ++pgid) {
-            var f = ufl[pgid];
-            if (f.parts) {  // FIXME shouldn't really be needed
-                continue;
-            }
+    // what's an uft
 
-            var style = tier.styleForFeature(f);
-            if (!style)
-                continue;
+    // so this should be a grouping function
+    for (let uft in tier.ungroupedFeatures) {
+        let ufl = tier.ungroupedFeatures[uft];
+        ufl.forEach(f => {
+            let style = tier.styleForFeature(f);
 
-            if (style.glyph == 'LINEPLOT') {
+            if (f.parts || !style)
+                return;
+
+            if (style.glyph === 'LINEPLOT') {
                 pusho(gbsFeatures, style.id, f);
                 gbsStyles[style.id] = style;
             } else {
-                var g = glyphForFeature(f, 0, style, tier);
-                if (g)
-                    glyphs.push(g);
+                let glyph = glyphForFeature(canvas, f, 0, style, tier);
+                if (glyph)
+                    glyphs.push(glyph);
             }
-        }
+        });
     }
 
-    for (var gbs in gbsFeatures) {
-        var gf = gbsFeatures[gbs];
-        var style = gbsStyles[gbs];
+    for (let gbs in gbsFeatures) {
+        let gf = gbsFeatures[gbs];
+        let style = gbsStyles[gbs];
         if (style.glyph == 'LINEPLOT') {
-            var lineGraphGlyphs = makeLineGlyph(gf, style, tier);
-            lineGraphGlyphs.forEach(function(lgg) {
-                glyphs.push(lgg);
-            });
-            specials = true;
+            let lineGraphGlyphs = makeLineGlyph(gf, style, tier);
+            lineGraphGlyphs.forEach(g => glyphs.push(g));
         }
     }
 
-    // Merge supergroups    
+    // Merge supergroups
 
+    // and this should be a merge supergroups-function
     if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
-        for (var sg in tier.superGroups) {
-            var sgg = tier.superGroups[sg];
-            tier.groups[sg] = shallowCopy(tier.groups[sg]);
-            tier.groups[sg].isSuperGroup = true;
-            var featsByType = {};
+        for (let sgId in tier.superGroups) {
+        // for (var sg in tier.superGroups) {
+            // let sgg = tier.superGroups[superGroup];
+            let sgGroup = tier.superGroups[sgId];
+            tier.groups[sgId] = shallowCopy(tier.groups[sgId]);
+            let group = tier.groups[sgId];
+            group.isSuperGroup = true;
+            let featuresByType = {};
 
-            var sgMin = 10000000000, sgMax = -10000000000;
-            var sgSeg = null;
+            let sgMin = 10000000000, sgMax = -10000000000;
+            let sgSeg = null;
+
+            sgGroup.forEach((g, i) => {
+                let groupedFeature = tier.groupedFeatures[sgGroup[i]];
+                if (!groupedFeature)
+                    return;
+
+                groupedFeature.forEach(feature => {
+                    pusho(featuresByType, feature.type, feature);
+                    sgMin = Math.min(feature.min, sgMin);
+                    sgMax = Math.max(feature.max, sgMax);
+                    if (feature.segment && !sgSeg)
+                        sgSeg = feature.segment;
+                });
+
+                if (group && !group.links || group.links.length === 0) {
+                    group.links = tier.groups[sgGroup[0]].links;
+                }
+
+                delete tier.groupedFeatures[sgGroup[g]];
+
+            });
+
+            /*
             for (var g = 0; g < sgg.length; ++g) {
                 var gf = tier.groupedFeatures[sgg[g]];
                 if (!gf)
@@ -661,181 +659,184 @@ function drawFeatureTier(tier)
 
                 delete tier.groupedFeatures[sgg[g]];  // 'cos we don't want to render the unmerged version.
             }
+             */
 
-            tier.groups[sg].max = sgMax;
-            tier.groups[sg].min = sgMin;
-            tier.groups[sg].segment = sgSeg;
+            tier.groups[sgId].max = sgMax;
+            tier.groups[sgId].min = sgMin;
+            tier.groups[sgId].segment = sgSeg;
 
-            for (var t in featsByType) {
-                var feats = featsByType[t];
-                var template = feats[0];
-                var loc = null;
-                for (var fi = 0; fi < feats.length; ++fi) {
-                    var f = feats[fi];
-                    var fl = new Range(f.min, f.max);
+            for (let t in featuresByType) {
+                let features = featuresByType[t];
+                let template = features[0];
+                let loc = null;
+
+                features.forEach(feature => {
+                    let fl = new Range(feature.min, feature.max);
                     if (!loc) {
                         loc = fl;
                     } else {
                         loc = union(loc, fl);
                     }
-                }
-                var mergedRanges = loc.ranges();
-                for (var si = 0; si < mergedRanges.length; ++si) {
-                    var r = mergedRanges[si];
+                });
 
-                    // begin coverage-counting
-                    var posCoverage = ((r.max()|0) - (r.min()|0) + 1) * sgg.length;
-                    var actCoverage = 0;
-                    for (var fi = 0; fi < feats.length; ++fi) {
-                        var f = feats[fi];
-                        if ((f.min|0) <= r.max() && (f.max|0) >= r.min()) {
-                            var umin = Math.max(f.min|0, r.min());
-                            var umax = Math.min(f.max|0, r.max());
+                let mergedRanges = loc.ranges();
+
+                mergedRanges.forEach(range => {
+                    let posCoverage = ((range.max() | 0) - (range.min() | 0) + 1) * sgGroup.length;
+                    let actCoverage = 0;
+
+                    features.forEach(feature => {
+                        if ((feature.min | 0) <= range.max() &&
+                            (feature.max | 0) >= range.min()) {
+                            let umin = Math.max(feature.min | 0, range.min());
+                            let umax = Math.min(feature.max | 0, range.max());
                             actCoverage += (umax - umin + 1);
                         }
-                    }
-                    var visualWeight = ((1.0 * actCoverage) / posCoverage);
-                    // end coverage-counting
+                    });
 
-                    var newf = new DASFeature();
-                    for (var k in template) {
-                        newf[k] = template[k];
+                    let newFeature = new DASFeature();
+                    for (let key in template) {
+                        newFeature[key] = template[key];
                     }
-                    newf.min = r.min();
-                    newf.max = r.max();
-                    if (newf.label && sgg.length > 1) {
-                        newf.label += ' (' + sgg.length + ' vars)';
+
+                    newFeature.min = range.min();
+                    newFeature.max = range.max();
+                    if (newFeature.label && sgGroup.length > 1) {
+                        newFeature.label += ' (' + sgGroup.length + ' vars)';
                     }
-                    newf.visualWeight = ((1.0 * actCoverage) / posCoverage);
-                    pusho(tier.groupedFeatures, sg, newf);
-                    // supergroups are already in tier.groups.
-                }
+
+                    newFeature.visualWeight = ((1.0 * actCoverage) / posCoverage);
+
+                    pusho(tier.groupedFeatures, sgId, newFeature);
+                });
             }
-
-            delete tier.superGroups[sg]; // Do we want this?
-        }       
+            delete tier.superGroups[sgId]; // Do we want this?
+            // I DON'T KNOW DO WE??
+        }
     }
 
     // Glyphify groups.
+    // meaning????
 
-    var gl = new Array();
-    for (var gid in tier.groupedFeatures) {
-        gl.push(gid);
+    let groupIds = [];
+    for (let gid in tier.groupedFeatures) {
+        groupIds.push(gid);
     }
-    gl.sort(function(g1, g2) {
-        var d = tier.groupedFeatures[g1][0].score - tier.groupedFeatures[g2][0].score;
-        if (d > 0) {
-            return -1;
-        } else if (d == 0) {
-            return 0;
-        } else {
-            return 1;
+    // let groupIds = Object.keys(tier.groupedFeatures);
+
+    // this has got to be done in a better way... what the hell
+    // arrow function, swap g1 & g2 in sub then return d.
+    groupIds.sort((g1, g2) =>
+            tier.groupedFeatures[g2][0].score - tier.groupedFeatures[g1][0].score);
+
+    let groupGlyphs = {};
+
+    groupIds.forEach(gId => {
+        let glyphs = glyphsForGroup(canvas, tier.groupedFeatures[gId], 0, tier.groups[gId], tier,
+                               (tier.dasSource.collapseSuperGroups && !tier.bumped)
+                               ? 'collapsed_gene' : 'tent'
+                              );
+
+        if (glyphs) {
+            glyphs.group = tier.groups[gId];
+            groupGlyphs[gId] = glyphs;
         }
     });
 
-    var groupGlyphs = {};
-    for (var gx = 0; gx < gl.length; ++gx) {
-        var gid = gl[gx];
-        var g = glyphsForGroup(tier.groupedFeatures[gid], 0, tier.groups[gid], tier,
-                               (tier.dasSource.collapseSuperGroups && !tier.bumped) ? 'collapsed_gene' : 'tent');
-        if (g) {
-            g.group = tier.groups[gid];
-            groupGlyphs[gid] = g;
-        }
+    for (let sgId in tier.superGroups) {
+
+        let superGroup = tier.superGroups[sgId];
+        let sgGlyphs = [];
+
+        let sgMin = 10000000000;
+        let sgMax = -10000000000;
+
+        superGroup.forEach(glyphs => {
+            let gGlyphs = groupGlyphs[glyphs];
+            if (gGlyphs) {
+                sgGlyphs.push(gGlyphs);
+                sgMin = Math.min(sgMin, gGlyphs.min());
+                sgMax = Math.max(sgMax, gGlyphs.max());
+            }
+        });
+
+        sgGlyphs.forEach(glyph => {
+            glyphs.push(new PaddedGlyph(glyph, sgMin, sgMax));
+        });
     }
 
-    for (var sg in tier.superGroups) {
-        var sgg = tier.superGroups[sg];
-        var sgGlyphs = [];
-        var sgMin = 10000000000;
-        var sgMax = -10000000000;
-        for (var sgi = 0; sgi < sgg.length; ++sgi) {
-            var gg = groupGlyphs[sgg[sgi]];
-            groupGlyphs[sgg[sgi]] = null;
-            if (gg) {
-                sgGlyphs.push(gg);
-                sgMin = Math.min(sgMin, gg.min());
-                sgMax = Math.max(sgMax, gg.max());
-            }
-        }
-        for (var sgi = 0; sgi < sgGlyphs.length; ++sgi) {
-            var gg = sgGlyphs[sgi];
-            glyphs.push(new PaddedGlyph(gg, sgMin, sgMax));
-        }
-    }
-    for (var g in groupGlyphs) {
-        var gg = groupGlyphs[g];
-        if (gg) {
-            glyphs.push(gg);
+    for (let gId in groupGlyphs) {
+        let glyph = groupGlyphs[gId];
+        if (gId) {
+            glyphs.push(glyph);
         }
     }
 
     // Bumping
 
-    var unbumpedST = new SubTier();
-    var bumpedSTs = [];
-    var hasBumpedFeatures = false;
-    var subtierMax = tier.subtierMax || tier.dasSource.subtierMax || tier.browser.defaultSubtierMax;
-    var subtiersExceeded = false;
+    let unbumpedST = new SubTier();
+    let bumpedSTs = [];
+    let subtierMax =
+            tier.subtierMax ||
+            tier.dasSource.subtierMax ||
+            tier.browser.defaultSubtierMax;
 
-  GLYPH_LOOP:
-    for (var i = 0; i < glyphs.length; ++i) {
-        var g = glyphs[i];
-        if (g.bump) {
-            hasBumpedFeatures = true;
-        }
-        if (g.bump && (tier.bumped || tier.dasSource.collapseSuperGroups)) {       // kind-of nasty.  supergroup collapsing is different from "normal" unbumping
-            for (var sti = 0; sti < bumpedSTs.length;  ++sti) {
-                var st = bumpedSTs[sti];
-                if (st.hasSpaceFor(g)) {
-                    st.add(g);
-                    continue GLYPH_LOOP;
-                }
-            }
-            if (bumpedSTs.length >= subtierMax) {
+    let subtiersExceeded = false;
+
+
+    // We want to add each glyph to either the subtier
+    // containing unbumped subtiers, or to the first bumped subtier.
+    glyphs.forEach(glyph => {
+        // if the glyph is to be bumped...
+        if (glyph.bump &&
+            tier.bumped ||
+            tier.dasSource.collapseSuperGroups) {
+
+            let glyphTier = bumpedSTs.find(st => st.hasSpaceFor(glyph));
+
+            if (glyphTier) {
+                glyphTier.add(glyph);
+            } else if (bumpedSTs.length >= subtierMax) {
                 subtiersExceeded = true;
             } else {
-                var st = new SubTier();
-                st.add(g);
-                bumpedSTs.push(st);
+                let subtier = new SubTier();
+                subtier.add(glyph);
+                bumpedSTs.push(subtier);
             }
         } else {
-            unbumpedST.add(g);
+            unbumpedST.add(glyph);
         }
-    }
+    });
 
     if (unbumpedST.glyphs.length > 0) {
         bumpedSTs = [unbumpedST].concat(bumpedSTs);
     }
 
-    for (var sti = 0; sti < bumpedSTs.length; ++sti) {
-        var st = bumpedSTs[sti];
-        if (st.quant) {
-            st.glyphs.unshift(new GridGlyph(st.height));
+    bumpedSTs.forEach(subtier => {
+        if (subtier.quant) {
+            subtier.glyphs.unshift(new Glyphs.GridGlyph(subtier.height));
         }
-    }
+    });
 
-    for (var sti = 0; sti < bumpedSTs.length; ++sti) {
-        var st = bumpedSTs[sti];
-        st.glyphs.sort(function (g1, g2) {
-            var z1 = g1.zindex || 0;
-            var z2 = g2.zindex || 0;
-            return z1 - z2;
-        });
-    }
 
-    tier.subtiers = bumpedSTs;
+    bumpedSTs.forEach(subtier => {
+        subtier.glyphs.sort((g1, g2) => (g1.zindex || 0) - (g2.zindex || 0));
+    });
+
     tier.glyphCacheOrigin = tier.browser.viewStart;
 
     if (subtiersExceeded)
         tier.updateStatus('Bumping limit exceeded, use the track editor to see more features');
     else
         tier.updateStatus();
+
+    // TODO: try to return the subtiers instead
+    tier.subtiers = bumpedSTs;
 }
 
 function prePaint(tier, canvas, retina, clear=true) {
     let subtiers = tier.subtiers;
-    console.log(subtiers);
+    // console.log(subtiers);
     if (!subtiers)
         return;
 
@@ -923,4 +924,50 @@ function paint(tier, canvas, retina, clear=true) {
         tier.overlayLabelCanvas = null;
 
     canvas.restore();
+}
+function getScoreMinMax(tier, style) {
+    let smin = tier.quantMin(style);
+    let smax = tier.quantMax(style);
+
+    if (!smax) {
+        if (smin < 0) {
+            smax = 0;
+        } else {
+            smax = 10;
+        }
+    }
+    if (!smin) {
+        smin = 0;
+    }
+    return [smin, smax];
+}
+
+function relScoreOrigin(score, smin, smax) {
+    let relScore = ((1.0 * score) - smin) / (smax-smin);
+    let relOrigin = (-1.0 * smin) / (smax - smin);
+
+    return [relScore, relOrigin];
+}
+
+function getRefSeq(tier, min, max) {
+    let refSeq = null;
+    if (tier.currentSequence) {
+        let csStart = tier.currentSequence.start|0;
+        let csEnd = tier.currentSequence.end|0;
+        if (csStart <= max && csEnd >= min) {
+            let sfMin = Math.max(min, csStart);
+            let sfMax = Math.min(max, csEnd);
+
+            refSeq = tier.currentSequence.seq.substr(sfMin - csStart, sfMax - sfMin + 1);
+            while (min < sfMin) {
+                refSeq = 'N' + refSeq;
+                sfMin--;
+            }
+            while (max > sfMax) {
+                refSeq = refSeq + 'N';
+                sfMax++;
+            }
+        }
+    }
+    return refSeq;
 }
