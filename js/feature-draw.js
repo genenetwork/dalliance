@@ -1163,6 +1163,8 @@ DasTier.prototype.quantMax = function(style) {
 
 if (typeof(module) !== 'undefined') {
     module.exports = {
-        drawFeatureTier: drawFeatureTier
+        drawFeatureTier: drawFeatureTier,
+        makeLineGlyph: makeLineGlyph,
+        SubTier: SubTier
     };
 }
