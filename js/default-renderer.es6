@@ -497,7 +497,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
             var bg = new Glyphs.BoxGlyph(minPos, 5, (maxPos - minPos), height, fill, stroke);
             glyph = new Glyphs.GroupGlyph([bg, glyph]);
         }
-    } else if (gtype === '__NONE') {
+    } else if (glyphType === '__NONE') {
         return null;
     } else /* default to BOX */ {
         let stroke = style.FGCOLOR || null;
