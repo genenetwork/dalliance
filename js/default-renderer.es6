@@ -23,7 +23,7 @@ import { makeGradient } from "./color.js";
 import { parseCigar } from "./cigar.js";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, prePaint, paint };
+export { renderTier, drawTier, drawFeatureTier, prePaint, paint };
 
 
 function renderTier(status, tier) {
