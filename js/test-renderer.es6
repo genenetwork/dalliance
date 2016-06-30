@@ -21,30 +21,141 @@ function renderTier(status, tier) {
 
 function drawTier(tier) {
     let oldTier = shallowCopy(tier);
+    // let oldTierBefore = shallowCopy(oldTier);
     let defTier = shallowCopy(tier);
+
+    let oldStBefore = null;
+    let oldStAfter = null;
 
     /* Old renderer */
     if (!oldTier.sequenceSource) {
-        console.log("old, before");
-        var oldStBefore = JSON.stringify(oldTier.subtiers);
+        // console.log("old, before");
+        if (oldTier.subtiers) {
+            oldStBefore = JSON.parse(JSON.stringify(oldTier.subtiers));
+            // console.log(Object.keys(oldStBefore));
+        } else {
+            oldStBefore = oldTier.subtiers;
+        }
+
         oldDrawFeatureTier(oldTier);
-        console.log("old, after");
-        var oldStAfter = JSON.stringify(oldTier.subtiers);
+        if (oldTier.subtiers) {
+            oldStAfter = JSON.parse(JSON.stringify(oldTier.subtiers));
+        } else {
+            oldStAfter = oldTier.subtiers;
+        }
+
     }
 
-    console.log("equal? " + (oldTier == defTier));
+    /* New renderer */
+    // console.log("defTier.subtiers: " + defTier.subtiers);
+
+    let defStBefore = null;
+    let defStAfter = null;
 
     if (!defTier.sequenceSource) {
-        console.log("def, before");
-        var defStBefore = JSON.stringify(defTier.subtiers);
+        // console.log("def, before");
+        if (defTier.subtiers) {
+            defStBefore = JSON.parse(JSON.stringify(defTier.subtiers));
+            // console.log(Object.keys(defStBefore));
+        } else {
+            defStBefore = defTier.subtiers;
+        }
+
         DefaultRenderer.drawFeatureTier(defTier);
-        console.log("def, after");
-        var defStAfter = JSON.stringify(defTier.subtiers);
+        if (defTier.subtiers) {
+            defStAfter = JSON.parse(JSON.stringify(defTier.subtiers));
+        } else {
+            defStAfter = defTier.subtiers;
+        }
     }
 
-    console.log("st equal? " + (oldStAfter == defStAfter));
+    /* compare output */
 
-    console.log(oldStAfter);
-    console.log(defStAfter);
+    console.log("old subtier type: " + typeof(oldStAfter));
+    console.log("old subtier: " + oldStAfter);
+    if (oldStAfter instanceof Array) {
+        console.log(oldStAfter instanceof Array);
+        console.log("old subtier length: " + oldStAfter.length);
+    }
 
+    console.log("def subtier type: " + typeof(defStAfter));
+    console.log("def subtier: " + defStAfter);
+    if (defStAfter instanceof Array) {
+        console.log(defStAfter instanceof Array);
+        console.log("def subtier length: " + defStAfter.length);
+    }
+
+    if (defStAfter instanceof Array &&
+        oldStAfter instanceof Array) {
+        compareObjects(oldStAfter, defStAfter);
+    }
+
+}
+
+function compareObjects(o1, o2, depth=0) {
+    if (depth > 0) {
+        let label = "";
+        for (let i = 0; i < depth; i++) {
+            label += "#";
+        }
+        console.log(label);
+    }
+    if (typeof(o1) !== typeof(o2)) {
+        console.log("type mismatch!");
+        console.log("o1: " + typeof(o1));
+        console.log(o1);
+        console.log("o2: " + typeof(o2));
+        console.log(o2);
+        return false;
+    } else {
+        if (o1 === null || o1 === undefined && o1 === o2) {
+            console.log("objects null or undefined");
+            console.log("o1: " + o1);
+            console.log("o2: " + o2);
+        }
+        if (o1 instanceof Array &&
+            o2 instanceof Array) {
+            console.log("comparing arrays");
+
+            if (o1.length === o2.length) {
+                for (let i = 0; i < o1.length; i++) {
+
+                    console.log("recursing on element #" + i);
+                    if (!compareObjects(o1[i], o2[i], depth+1))
+                        break;
+                }
+            } else {
+                console.log("Arrays of different length!");
+                console.log("o1:");
+                console.log(o1.length);
+                console.log("o2:");
+                console.log(o2.length);
+            }
+
+
+        } else if (typeof(o1) === "object" && o1 && o2) {
+            console.log("comparing objects");
+            if (Object.keys(o1).length === Object.keys(o2).length ||
+                Object.keys(o1).every(k => k in o2)) {
+                console.log("keys equal, comparing values");
+
+                for (let k in o1) {
+                    console.log("recursing on key " + k);
+                    if (!compareObjects(o1[k], o2[k], depth+1))
+                        break;
+                }
+
+            } else {
+                console.log("Objects have different keys:");
+                console.log("o1: ");
+                console.log(Object.keys(o1));
+                console.log("o2: ");
+                console.log(Object.keys(o2));
+            }
+
+        } else {
+            console.log("comparing primitives");
+            return o1 === o2;
+        }
+    }
 }
