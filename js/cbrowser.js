@@ -45,8 +45,11 @@ if (typeof(require) !== 'undefined') {
     var sourceStyleURI = sourcecompare.sourceStyleURI;
 
     var DefaultRenderer = require('./default-renderer.es6');
+    var OldRenderer = require('./old-renderer.js');
     var DummyRenderer = require('./dummy-renderer.es6');
     var MultiRenderer = require('./multi-renderer.es6');
+
+    var TestRenderer = require('./test-renderer.es6');
 }
 
 function Region(chr, min, max) {
