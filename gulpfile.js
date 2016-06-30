@@ -8,6 +8,8 @@ var uglify = require('gulp-uglify');
 var babel = require('gulp-babel');
 var babelify = require('babelify');
 
+var eslint = require('gulp-eslint');
+
 require("babel-polyfill");
 
 
@@ -84,3 +86,10 @@ gulp.task('watch', function() {
 
 gulp.task('default', ['build-main', 'build-worker']);
 gulp.task('compile', ['compile-main', 'compile-worker']);
+
+gulp.task('lint-es6', function() {
+    return gulp.src('js/*.es6')
+        .pipe(eslint())
+        .pipe(eslint.format())
+        .pipe(eslint.failOnError());
+});
