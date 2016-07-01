@@ -72,7 +72,8 @@ function Browser(opts) {
         };
 
     // this.defaultRenderer = DefaultRenderer;
-    this.defaultRenderer = TestRenderer;
+
+    this.defaultRenderer = DefaultRenderer;
 
 
     this.prefix = '//www.biodalliance.org/release-0.14/';
