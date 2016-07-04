@@ -5,7 +5,6 @@ import { SubTier, makeLineGlyph } from "./feature-draw.js";
 
 import { drawSeqTier } from "./sequence-draw.js";
 
-import { OverlayLabelCanvas } from "./glyphs.js";
 
 import { Range, union } from "./spans.js";
 
@@ -32,19 +31,22 @@ function renderTier(status, tier) {
 }
 
 function drawTier(tier) {
-    let features = tier.currentFeatures;
-    let sequence = tier.currentSequence;
-    if (sequence) {
-        drawSeqTier(tier, sequence);
-    } else {
-        drawFeatureTier(tier);
-    }
-
     let canvas = tier.viewport.getContext("2d");
     let retina = tier.browser.retina && window.devicePixelRatio > 1;
     if (retina) {
         canvas.scale(2, 2);
     }
+
+    let features = tier.currentFeatures;
+    let sequence = tier.currentSequence;
+    if (tier.sequenceSource) {
+        drawSeqTier(tier, sequence);
+    } else if (features) {
+        drawFeatureTier(tier, canvas);
+    } else {
+        console.log("No sequence or features in tier!");
+    }
+
 
     prePaint(tier, canvas, retina, true);
     paint(tier, canvas, retina, true);
@@ -129,7 +131,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
 
     let scale = tier.browser.scale;
     let origin = tier.browser.viewStart;
-    let gtype = style.glyph || 'BOX';
+    let glyphType = style.glyph || 'BOX';
 
     let min = feature.min;
     let max = feature.max;
@@ -149,27 +151,17 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let quant;
 
     // Create one of these glyphs
-    if (gtype === 'CROSS' ||
-        gtype === 'EX' ||
-        gtype === 'TRIANGLE' ||
-        gtype === 'DOT' ||
-        gtype === 'SQUARE' ||
-        gtype === 'STAR' ||
-        gtype === 'PLIMSOLL') {
+    if (glyphType === 'CROSS' ||
+        glyphType === 'EX' ||
+        glyphType === 'TRIANGLE' ||
+        glyphType === 'DOT' ||
+        glyphType === 'SQUARE' ||
+        glyphType === 'STAR' ||
+        glyphType === 'PLIMSOLL') {
 
 
-        let stroke = style.FGCOLOR || 'black';
-        let fill = style.BGCOLOR || 'none';
-        let outline = style.STROKECOLOR;
+    } else if (glyphType === 'HISTOGRAM' || glyphType === 'GRADIENT' && score !== 'undefined') {
 
-        if (style.BGITEM && feature.itemRgb) {
-            stroke = feature.itemRgb;
-        } else if (isDasBooleanTrue(style.COLOR_BY_SCORE2)) {
-            let grad = style.BGGRAD || style._gradient;
-            if (!grad) {
-                grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
-                style._gradient = grad;
-            }
 
             let score2 = feature.score2;
             if (score2 !== undefined || !stroke) {
@@ -275,6 +267,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         }
     } else if (gtype === 'HISTOGRAM' || gtype === 'GRADIENT' && score !== 'undefined') {
         var centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
+        let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
         let [smin, smax] = getScoreMinMax(tier, style);
 
@@ -288,8 +281,8 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         // Shift smin/smax in case we want to center the histogram
         // on the horizontal axis
         if (centerOnAxis) {
-            var tmin = tier.quantMin(style);
-            var tmax = tier.quantMax(style);
+            let tmin = tier.quantMin(style);
+            let tmax = tier.quantMax(style);
             smin = tmin - ((tmax - tmin) / 2);
             smax = tmax - ((tmax - tmin) / 2);
         }
@@ -297,7 +290,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         let relScore = ((1.0 * score) - smin) / (smax-smin);
         let relOrigin = (-1.0 * smin) / (smax - smin);
 
-        if (gtype === 'HISTOGRAM') {
+        if (glyphType === 'HISTOGRAM') {
             if (relScore >= relOrigin) {
                 height = (relScore - Math.max(0, relOrigin)) * requiredHeight;
                 y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight) - height;
@@ -321,7 +314,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         let fill = style.BGCOLOR || style.COLOR1 || 'green';
         if (style.BGITEM && feature.itemRgb)
             fill = feature.itemRgb;
-        var alpha = style.ALPHA ? (1.0 * style.ALPHA) : null;
+        let alpha = style.ALPHA ? (1.0 * style.ALPHA) : null;
 
         if (style.BGGRAD) {
             let grad = style.BGGRAD;
@@ -347,48 +340,48 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         let tempGlyph = new Glyphs.BoxGlyph(minPos, y, (maxPos - minPos), height, fill, stroke, alpha);
         glyph = new Glyphs.TranslatedGlyph(tempGlyph, 0, 0, requiredHeight);
 
-    } else if (gtype === 'HIDDEN') {
+    } else if (glyphType === 'HIDDEN') {
         glyph = new Glyphs.PaddedGlyph(null, minPos, maxPos);
         noLabel = true;
 
-    } else if (gtype === 'ARROW') {
+    } else if (glyphType === 'ARROW') {
         let color = style.FGCOLOR || 'purple';
         let parallel = isDasBooleanTrue(style.PARALLEL);
         let sw = isDasBooleanTrue(style.SOUTHWEST);
         let ne = isDasBooleanTrue(style.NORTHEAST);
         glyph = new Glyphs.ArrowGlyph(minPos, maxPos, height, color, parallel, sw, ne);
 
-    } else if (gtype === 'ANCHORED_ARROW') {
+    } else if (glyphType === 'ANCHORED_ARROW') {
         let stroke = style.FGCOLOR || 'none';
         let fill = style.BGCOLOR || 'green';
         glyph = new Glyphs.AArrowGlyph(minPos, maxPos, height, fill, stroke, strand);
         glyph.bump = true;
 
-    } else if (gtype === 'SPAN') {
+    } else if (glyphType === 'SPAN') {
         let stroke = style.FGCOLOR || 'black';
         glyph = new Glyphs.SpanGlyph(minPos, maxPos, height, stroke);
 
-    } else if (gtype === 'LINE') {
+    } else if (glyphType === 'LINE') {
         let stroke = style.FGCOLOR || 'black';
         let lineStyle = style.STYLE || 'solid';
         glyph = new Glyphs.LineGlyph(minPos, maxPos, height, lineStyle, strand, stroke);
 
-    } else if (gtype === 'PRIMERS') {
+    } else if (glyphType === 'PRIMERS') {
         let stroke = style.FGCOLOR || 'black';
         let fill = style.BGCOLOR || 'red';
         glyph = new Glyphs.PrimersGlyph(minPos, maxPos, height, fill, stroke);
 
-    } else if (gtype === 'TEXT') {
+    } else if (glyphType === 'TEXT') {
         let string = style.STRING || 'text';
         let fill = style.FGCOLOR || 'black';
         glyph = new Glyphs.TextGlyph(canvas, minPos, maxPos, height, fill, string);
 
-    } else if (gtype === 'TOOMANY') {
+    } else if (glyphType === 'TOOMANY') {
         let stroke = style.FGCOLOR || 'gray';
         let fill = style.BGCOLOR || 'orange';
         glyph = new Glyphs.TooManyGlyph(minPos, maxPos, height, fill, stroke);
 
-    } else if (gtype === 'POINT') {
+    } else if (glyphType === 'POINT') {
         let height = tier.forceHeight || style.HEIGHT || 30;
         let [smin, smax] = getScoreMinMax(tier, style);
         let yscale = ((1.0 * height) / (smax - smin));
@@ -411,7 +404,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         }
 
         glyph = new Glyphs.PointGlyph((minPos + maxPos)/2, height-sc, height, fill);
-    } else if (gtype === '__SEQUENCE') {
+    } else if (glyphType === '__SEQUENCE') {
         let rawseq = feature.seq;
         let seq = rawseq;
         let rawquals = feature.quals;
@@ -489,7 +482,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
             indels.splice(0, 0, glyph);
             glyph = new Glyphs.GroupGlyph(indels);
         }
-    } else if (gtype === '__INSERTION') {
+    } else if (glyphType === '__INSERTION') {
         let ig = new Glyphs.TriangleGlyph(minPos, 5, 'S', 5, tier.browser.baseColors['I']);
         glyph = new Glyphs.LabelledGlyph(canvas, ig, feature.insertion || feature.altAlleles[0], false, 'center', 'above', '7px sans-serif');
         if ((maxPos - minPos) > 1) {
@@ -910,8 +903,8 @@ function prePaint(tier, canvas, retina, clear=true) {
     }
 }
 
-function paint(tier, canvas, retina, clear=true) {
-    let overlayLabelCanvas = new OverlayLabelCanvas();
+function paint(tier, canvas, retina) {
+    let overlayLabelCanvas = new Glyphs.OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
     canvas.translate(offset, tier.padding);
     overlayLabelCanvas.translate(0, tier.padding);
@@ -925,6 +918,7 @@ function paint(tier, canvas, retina, clear=true) {
 
     canvas.restore();
 }
+
 function getScoreMinMax(tier, style) {
     let smin = tier.quantMin(style);
     let smax = tier.quantMax(style);
