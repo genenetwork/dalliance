@@ -105,7 +105,6 @@ Browser.prototype.createSources = function(config) {
 
     var fs, ss;
 
-    console.log(config.tier_type);
     if (config.tier_type == 'sequence' || config.twoBitURI || config.twoBitBlob) {
         if (config.twoBitURI || config.twoBitBlob) {
             ss = new TwoBitSequenceSource(config);
@@ -116,20 +115,8 @@ Browser.prototype.createSources = function(config) {
         }
     } else if (config.tier_type && __dalliance_sourceAdapterFactories[config.tier_type]) {
         var saf = __dalliance_sourceAdapterFactories[config.tier_type];
-        console.log("saf");
-        console.log(saf);
         var ns;
-        if (config.tier_type === 'multi-track') {
-            console.log(config);
-            // If we're a multi-track source we want to create each sub-source
-            console.log(this);
-            ns = saf(config, function(s) {
-                console.log(self);
-                return self.createSources(s);
-            });
-        } else {
-            ns = saf(config);
-        }
+        ns = saf(config);
         fs = ns.features;
         ss = ns.sequence;
     } else if (config.bwgURI || config.bwgBlob) {
@@ -192,8 +179,6 @@ Browser.prototype.createSources = function(config) {
 
 DasTier.prototype.fetchStylesheet = function(cb) {
     var ssSource;
-    console.log("in fetch");
-    console.log(this);
     // Somewhat ugly workaround for the special case of DAS sources...
     if (this.dasSource.tier_type === "multi-track") {
         ssSource = this.getSource();
@@ -213,7 +198,7 @@ DasTier.prototype.fetchStylesheet = function(cb) {
     } else {
         ssSource = this.getSource();
     }
-    console.log(ssSource);
+    // console.log(ssSource);
     ssSource.getStyleSheet(cb);
 }
 
@@ -318,14 +303,10 @@ CachingFeatureSource.prototype.fetch = function(chr, min, max, scale, types, poo
             return;
         }
     } else if (awaitedFeatures) {
-        console.log("awaited:")
-        console.log(awaitedFeatures);
         if (awaitedFeatures.styleFilters)
             awaitedFeatures.styleFilters.addAll(styleFilters);
     } else {
         awaitedFeatures = new Awaited();
-        console.log("sf:");
-        console.log(styleFilters);
         var typeList = null;
         if (styleFilters) {
             awaitedFeatures.styleFilters = styleFilters;
