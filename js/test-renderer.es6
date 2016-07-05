@@ -47,7 +47,6 @@ function drawTier(tier) {
     }
 
     /* New renderer */
-    // console.log("defTier.subtiers: " + defTier.subtiers);
 
     let defStBefore = null;
     let defStAfter = null;
@@ -61,7 +60,8 @@ function drawTier(tier) {
             defStBefore = defTier.subtiers;
         }
 
-        DefaultRenderer.drawFeatureTier(defTier);
+        let canvas = defTier.viewport.getContext("2d");
+        DefaultRenderer.drawFeatureTier(defTier, canvas);
         if (defTier.subtiers) {
             defStAfter = JSON.parse(JSON.stringify(defTier.subtiers));
         } else {
@@ -87,7 +87,11 @@ function drawTier(tier) {
 
     if (defStAfter instanceof Array &&
         oldStAfter instanceof Array) {
-        compareObjects(oldStAfter, defStAfter);
+        if (compareObjects(oldStAfter, defStAfter)) {
+            console.log("Test successful!");
+        } else {
+            console.log("Test failed");
+        }
     }
 
 }
@@ -112,24 +116,31 @@ function compareObjects(o1, o2, depth=0) {
             console.log("objects null or undefined");
             console.log("o1: " + o1);
             console.log("o2: " + o2);
+            return o1 === o2;
         }
+
         if (o1 instanceof Array &&
             o2 instanceof Array) {
             console.log("comparing arrays");
 
             if (o1.length === o2.length) {
+                let cmp = true;
                 for (let i = 0; i < o1.length; i++) {
 
                     console.log("recursing on element #" + i);
-                    if (!compareObjects(o1[i], o2[i], depth+1))
+                    if (!compareObjects(o1[i], o2[i], depth+1)) {
+                        cmp = false;
                         break;
+                    }
                 }
+                return cmp;
             } else {
                 console.log("Arrays of different length!");
                 console.log("o1:");
                 console.log(o1.length);
                 console.log("o2:");
                 console.log(o2.length);
+                return false;
             }
 
 
@@ -139,11 +150,15 @@ function compareObjects(o1, o2, depth=0) {
                 Object.keys(o1).every(k => k in o2)) {
                 console.log("keys equal, comparing values");
 
+                let cmp = true;
                 for (let k in o1) {
                     console.log("recursing on key " + k);
-                    if (!compareObjects(o1[k], o2[k], depth+1))
+                    if (!compareObjects(o1[k], o2[k], depth+1)) {
+                        cmp = false;
                         break;
+                    }
                 }
+                return cmp;
 
             } else {
                 console.log("Objects have different keys:");
@@ -151,11 +166,21 @@ function compareObjects(o1, o2, depth=0) {
                 console.log(Object.keys(o1));
                 console.log("o2: ");
                 console.log(Object.keys(o2));
+                return false;
             }
 
         } else {
-            console.log("comparing primitives");
-            return o1 === o2;
+            console.log("comparing primitives: " + o1 + ", " + o2);
+            if (o1 === o2) {
+                return true;
+            } else {
+                console.log("primitives not equal: ");
+                console.log("o1: ");
+                console.log(o1);
+                console.log("o2: ");
+                console.log(o2);
+                return false;
+            }
         }
     }
 }
