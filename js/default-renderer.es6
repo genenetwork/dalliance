@@ -144,7 +144,9 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let maxPos = Math.max(rawMaxPos, minPos + 1);
 
     let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-    let requiredHeight = height * 1.0;
+    // "parse" height by ugly coercion
+    height = height * 1.0;
+    let requiredHeight = height;
     let bump = style.BUMP && isDasBooleanTrue(style.BUMP);
 
     let glyph;
