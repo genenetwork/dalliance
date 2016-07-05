@@ -159,114 +159,13 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         glyphType === 'STAR' ||
         glyphType === 'PLIMSOLL') {
 
+        [glyph, quant] = featureToCrossLikeGlyph(canvas, tier, feature,
+                                                 glyphType, style, forceHeight, noLabel);
 
     } else if (glyphType === 'HISTOGRAM' || glyphType === 'GRADIENT' && score !== 'undefined') {
 
+        // [glyph, quant] = featureToGradientLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight);
 
-            let score2 = feature.score2;
-            if (score2 !== undefined || !stroke) {
-                score2 = score2 || 0;
-
-                let smin2 = style.MIN2 ? (1.0 * style.MIN2) : 0.0;
-                let smax2 = style.MAX2 ? (1.0 * style.MAX2) : 1.0;
-                let relScore2 = ((1.0 * score2) - smin2) / (smax2-smin2);
-
-                let step = (relScore2*grad.length) | 0;
-                step = Math.min(step, 0);
-                step = Math.max(step, grad.length - 1);
-                if (step >= grad.length)
-                    step = grad.length - 1;
-                stroke = grad[step];
-            }
-        }
-
-        // TODO: This is probably completely pointless
-        height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-        requiredHeight = height * 1.0;
-
-        let size = style.SIZE || height;
-        if (style.RSIZE) {
-            size = (1.0 * style.RSIZE) * height;
-        }
-
-        if (style.STROKETHRESHOLD) {
-            if (size < (1.0 * style.STROKETHRESHOLD))
-                outline = null;
-        }
-
-        // size = 1.0 * size;
-
-        let mid = (minPos + maxPos)/2;
-
-        if (gtype === 'EX') {
-            glyph = new Glyphs.ExGlyph(mid, size, stroke);
-        } else if (gtype === 'TRIANGLE') {
-            var dir = style.DIRECTION || 'N';
-            var width = style.LINEWIDTH || size;
-            glyph = new Glyphs.TriangleGlyph(mid, size, dir, width, stroke, outline);
-        } else if (gtype === 'DOT') {
-            glyph = new Glyphs.DotGlyph(mid, size, stroke, outline);
-        } else if (gtype === 'PLIMSOLL') {
-            glyph = new Glyphs.PlimsollGlyph(mid, size, 0.2 * size, stroke, outline);
-        } else if (gtype === 'SQUARE') {
-            glyph = new Glyphs.BoxGlyph(mid - size/2, 0, size, size, stroke, outline);
-        } else if (gtype === 'STAR') {
-            let points = 5;
-            if (style.POINTS)
-                points = style.POINTS | 0;
-            glyph = new Glyphs.StarGlyph(mid, size/2, points, stroke, outline);
-        } else {
-            glyph = new Glyphs.CrossGlyph(mid, size, stroke);
-        }
-
-        if (fill && fill != 'none' && (maxPos - minPos) > 5) {
-            let boxGlyph = new Glyphs.BoxGlyph(minPos, 0, (maxPos - minPos), size, fill);
-            glyph = new Glyphs.GroupGlyph([boxGlyph, glyph]);
-        }
-
-        if (isDasBooleanTrue(style.SCATTER)) {
-            let [smin, smax] = getScoreMinMax(tier, style);
-
-            let relScore = ((1.0 * score) - smin) / (smax-smin);
-            let relOrigin = (-1.0 * smin) / (smax - smin);
-
-            if (relScore < 0.0 || relScore > 1.0) {
-                // Glyph is out of bounds.
-                // Should we allow for "partially showing" glyphs?
-
-                return null;
-            } else {
-                if (relScore >= relOrigin) {
-                    height = Math.max(1, (relScore - relOrigin) * requiredHeight);
-                    y = y + ((1.0 - relOrigin) * requiredHeight) - height;
-                } else {
-                    height = Math.max(1, (relScore - relOrigin) * requiredHeight);
-                    y = y + ((1.0 - relOrigin) * requiredHeight);
-                }
-
-                quant = {min: smin, max: smax};
-
-                let heightFudge = 0;
-                let featureLabel;
-                if (typeof(feature.forceLabel) !== 'undefined')
-                    featureLabel = feature.forceLabel;
-                else
-                    featureLabel = style.LABEL;
-
-                if (isDasBooleanNotFalse(featureLabel) && label && !noLabel) {
-                    glyph = new Glyphs.LabelledGlyph(canvas, glyph, label,
-                                                     true, null,
-                                                     featureLabel == 'above' ? 'above' : 'below');
-                    if (featureLabel == 'above') {
-                        heightFudge = glyph.textHeight + 2;
-                    }
-                    noLabel = true;
-                }
-                glyph = new Glyphs.TranslatedGlyph(glyph, 0, y - (size / 2) - heightFudge, requiredHeight);
-            }
-        }
-    } else if (gtype === 'HISTOGRAM' || gtype === 'GRADIENT' && score !== 'undefined') {
-        var centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
         let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
         let [smin, smax] = getScoreMinMax(tier, style);
@@ -964,4 +863,242 @@ function getRefSeq(tier, min, max) {
         }
     }
     return refSeq;
+}
+
+function featureToCrossLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight, noLabel) {
+    let scale = tier.browser.scale;
+    let origin = tier.browser.viewStart;
+
+    let score = feature.score;
+    let label = feature.label || feature.id;
+
+    let minPos = (feature.min - origin) * scale;
+    let maxPos = Math.max((feature.max - origin + 1) * scale, minPos + 1);
+
+    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
+    // TODO: This is probably completely pointless
+    let requiredHeight = height * 1.0;
+
+    let glyph = null;
+    let quant = null;
+
+    let stroke = style.FGCOLOR || 'black';
+    let fill = style.BGCOLOR || 'none';
+    let outline = style.STROKECOLOR;
+
+    if (style.BGITEM && feature.itemRgb) {
+        stroke = feature.itemRgb;
+    } else if (isDasBooleanTrue(style.COLOR_BY_SCORE2)) {
+        let grad = style.BGGRAD || style._gradient;
+        if (!grad) {
+            grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
+            style._gradient = grad;
+        }
+
+        let score2 = feature.score2;
+        if (score2 !== undefined || !stroke) {
+            score2 = score2 || 0;
+
+            let smin2 = style.MIN2 ? (1.0 * style.MIN2) : 0.0;
+            let smax2 = style.MAX2 ? (1.0 * style.MAX2) : 1.0;
+            let relScore2 = ((1.0 * score2) - smin2) / (smax2-smin2);
+
+            let step = (relScore2*grad.length) | 0;
+            step = Math.min(step, 0);
+            step = Math.max(step, grad.length - 1);
+            if (step >= grad.length)
+                step = grad.length - 1;
+            stroke = grad[step];
+        }
+    }
+
+
+    let size = style.SIZE || height;
+    if (style.RSIZE) {
+        size = (1.0 * style.RSIZE) * height;
+    }
+
+    if (style.STROKETHRESHOLD) {
+        if (size < (1.0 * style.STROKETHRESHOLD))
+            outline = null;
+    }
+
+    let mid = (minPos + maxPos)/2;
+
+    if (glyphType === 'EX') {
+        glyph = new Glyphs.ExGlyph(mid, size, stroke);
+
+    } else if (glyphType === 'TRIANGLE') {
+        let dir = style.DIRECTION || 'N';
+        let width = style.LINEWIDTH || size;
+        glyph = new Glyphs.TriangleGlyph(mid, size, dir, width, stroke, outline);
+
+    } else if (glyphType === 'DOT') {
+        glyph = new Glyphs.DotGlyph(mid, size, stroke, outline);
+
+    } else if (glyphType === 'PLIMSOLL') {
+        glyph = new Glyphs.PlimsollGlyph(mid, size, 0.2 * size, stroke, outline);
+
+    } else if (glyphType === 'SQUARE') {
+        glyph = new Glyphs.BoxGlyph(mid - size/2, 0, size, size, stroke, outline);
+
+    } else if (glyphType === 'STAR') {
+        let points = style.POINTS || 5;
+        glyph = new Glyphs.StarGlyph(mid, size/2, points, stroke, outline);
+
+    } else {
+        glyph = new Glyphs.CrossGlyph(mid, size, stroke);
+
+    }
+
+    if (fill && fill != 'none' && (maxPos - minPos) > 5) {
+        let boxGlyph = new Glyphs.BoxGlyph(minPos, 0, (maxPos - minPos), size, fill);
+        glyph = new Glyphs.GroupGlyph([boxGlyph, glyph]);
+    }
+
+    if (isDasBooleanTrue(style.SCATTER)) {
+        let [smin, smax] = getScoreMinMax(tier, style);
+
+        let relScore = ((1.0 * score) - smin) / (smax-smin);
+        let relOrigin = (-1.0 * smin) / (smax - smin);
+
+
+        if (relScore < 0.0 || relScore > 1.0) {
+            // Glyph is out of bounds.
+            // Should we allow for "partially showing" glyphs?
+
+            return null;
+        } else {
+            let y;
+            if (relScore >= relOrigin) {
+                height = Math.max(1, (relScore - relOrigin) * requiredHeight);
+                y = y + ((1.0 - relOrigin) * requiredHeight) - height;
+            } else {
+                height = Math.max(1, (relScore - relOrigin) * requiredHeight);
+                y = y + ((1.0 - relOrigin) * requiredHeight);
+            }
+
+            quant = {min: smin, max: smax};
+
+            let heightFudge = 0;
+            let featureLabel;
+            if (typeof(feature.forceLabel) !== 'undefined')
+                featureLabel = feature.forceLabel;
+            else
+                featureLabel = style.LABEL;
+
+            if (isDasBooleanNotFalse(featureLabel) && label && !noLabel) {
+                glyph = new Glyphs.LabelledGlyph(canvas, glyph, label,
+                                                 true, null,
+                                                 featureLabel == 'above' ? 'above' : 'below');
+                if (featureLabel == 'above') {
+                    heightFudge = glyph.textHeight + 2;
+                }
+                noLabel = true;
+            }
+            glyph = new Glyphs.TranslatedGlyph(glyph, 0, y - (size / 2) - heightFudge, requiredHeight);
+        }
+    }
+
+    return [glyph, quant];
+}
+
+
+// function featureToPointLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight, noLabel) {
+function featureToGradientLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight) {
+    let scale = tier.browser.scale;
+    let origin = tier.browser.viewStart;
+
+    let score = feature.score;
+
+    let minPos = (feature.min - origin) * scale;
+    let maxPos = Math.max((feature.max - origin + 1) * scale, minPos + 1);
+
+    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
+    // TODO: This is probably completely pointless
+    let requiredHeight = height * 1.0;
+
+    let glyph = null;
+    let quant = null;
+    let y;
+
+    // let stroke = style.FGCOLOR || null;
+    // let fill = style.BGCOLOR || style.COLOR1 || 'green';
+
+    // code goes here
+    let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
+
+    let [smin, smax] = getScoreMinMax(tier, style);
+
+    if ((1.0 * score) < (1.0 * smin)) {
+        score = smin;
+    }
+    if ((1.0 * score) > (1.0 * smax)) {
+        score = smax;
+    }
+
+    // Shift smin/smax in case we want to center the histogram
+    // on the horizontal axis
+    if (centerOnAxis) {
+        let tmin = tier.quantMin(style);
+        let tmax = tier.quantMax(style);
+        smin = tmin - ((tmax - tmin) / 2);
+        smax = tmax - ((tmax - tmin) / 2);
+    }
+
+    let relScore = ((1.0 * score) - smin) / (smax-smin);
+    let relOrigin = (-1.0 * smin) / (smax - smin);
+
+    if (glyphType === 'HISTOGRAM') {
+        if (relScore >= relOrigin) {
+            height = (relScore - Math.max(0, relOrigin)) * requiredHeight;
+            y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight) - height;
+
+            if (centerOnAxis)
+                y += height / 2;
+        } else {
+            height = (Math.max(0, relOrigin) - relScore) * requiredHeight;
+            y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight);
+
+            if (centerOnAxis)
+                y -= height / 2;
+        }
+        if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
+            quant = null;
+        else
+            quant = {min: smin, max: smax};
+    }
+
+    let stroke = style.FGCOLOR || null;
+    let fill = style.BGCOLOR || style.COLOR1 || 'green';
+    if (style.BGITEM && feature.itemRgb)
+        fill = feature.itemRgb;
+    let alpha = style.ALPHA ? (1.0 * style.ALPHA) : null;
+
+    if (style.BGGRAD) {
+        let grad = style.BGGRAD;
+        let step = (relScore*grad.length)|0;
+        if (step < 0) step = 0;
+        if (step >= grad.length) step = grad.length - 1;
+        fill = grad[step];
+    }
+
+    if (style.COLOR2) {
+        let grad = style._gradient;
+        if (!grad) {
+            grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
+            style._gradient = grad;
+        }
+
+        let step = (relScore*grad.length) | 0;
+        step = Math.min(step, 0);
+        step = Math.max(step, grad.length - 1);
+        fill = grad[step];
+    }
+
+    let tempGlyph = new Glyphs.BoxGlyph(minPos, y, (maxPos - minPos), height, fill, stroke, alpha);
+    glyph = new Glyphs.TranslatedGlyph(tempGlyph, 0, 0, requiredHeight);
+    // console.log("glyph " + glyph[0]);
+
+    return [glyph, quant];
 }
