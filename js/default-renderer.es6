@@ -168,80 +168,8 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
 
     } else if (glyphType === 'HISTOGRAM' || glyphType === 'GRADIENT' && score !== 'undefined') {
 
-        // [glyph, quant] = featureToGradientLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight);
+        [glyph, quant] = featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, forceHeight);
 
-        let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
-
-        let [smin, smax] = getScoreMinMax(tier, style);
-
-        if ((1.0 * score) < (1.0 * smin)) {
-            score = smin;
-        }
-        if ((1.0 * score) > (1.0 * smax)) {
-            score = smax;
-        }
-
-        // Shift smin/smax in case we want to center the histogram
-        // on the horizontal axis
-        if (centerOnAxis) {
-            let tmin = tier.quantMin(style);
-            let tmax = tier.quantMax(style);
-            smin = tmin - ((tmax - tmin) / 2);
-            smax = tmax - ((tmax - tmin) / 2);
-        }
-
-        let relScore = ((1.0 * score) - smin) / (smax-smin);
-        let relOrigin = (-1.0 * smin) / (smax - smin);
-
-        if (glyphType === 'HISTOGRAM') {
-            if (relScore >= relOrigin) {
-                height = (relScore - Math.max(0, relOrigin)) * requiredHeight;
-                y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight) - height;
-
-                if (centerOnAxis)
-                    y += height / 2;
-            } else {
-                height = (Math.max(0, relOrigin) - relScore) * requiredHeight;
-                y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight);
-
-                if (centerOnAxis)
-                    y -= height / 2;
-            }
-            if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
-                quant = null;
-            else
-                quant = {min: smin, max: smax};
-        }
-
-        let stroke = style.FGCOLOR || null;
-        let fill = style.BGCOLOR || style.COLOR1 || 'green';
-        if (style.BGITEM && feature.itemRgb)
-            fill = feature.itemRgb;
-        let alpha = style.ALPHA ? (1.0 * style.ALPHA) : null;
-
-        if (style.BGGRAD) {
-            let grad = style.BGGRAD;
-            let step = (relScore*grad.length)|0;
-            if (step < 0) step = 0;
-            if (step >= grad.length) step = grad.length - 1;
-            fill = grad[step];
-        }
-
-        if (style.COLOR2) {
-            let grad = style._gradient;
-            if (!grad) {
-                grad = makeGradient(50, style.COLOR1, style.COLOR2, style.COLOR3);
-                style._gradient = grad;
-            }
-
-            let step = (relScore*grad.length) | 0;
-            step = Math.min(step, 0);
-            step = Math.max(step, grad.length - 1);
-            fill = grad[step];
-        }
-
-        let tempGlyph = new Glyphs.BoxGlyph(minPos, y, (maxPos - minPos), height, fill, stroke, alpha);
-        glyph = new Glyphs.TranslatedGlyph(tempGlyph, 0, 0, requiredHeight);
 
     } else if (glyphType === 'HIDDEN') {
         glyph = new Glyphs.PaddedGlyph(null, minPos, maxPos);
@@ -1004,9 +932,7 @@ function featureToCrossLikeGlyph(canvas, tier, feature, glyphType, style, forceH
     return [glyph, quant];
 }
 
-
-// function featureToPointLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight, noLabel) {
-function featureToGradientLikeGlyph(canvas, tier, feature, glyphType, style, forceHeight) {
+function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, forceHeight) {
     let scale = tier.browser.scale;
     let origin = tier.browser.viewStart;
 
@@ -1021,7 +947,6 @@ function featureToGradientLikeGlyph(canvas, tier, feature, glyphType, style, for
 
     let glyph = null;
     let quant = null;
-    let y;
 
     // let stroke = style.FGCOLOR || null;
     // let fill = style.BGCOLOR || style.COLOR1 || 'green';
