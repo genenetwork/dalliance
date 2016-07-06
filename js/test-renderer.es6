@@ -87,7 +87,7 @@ function drawTier(tier) {
 
     if (defStAfter instanceof Array &&
         oldStAfter instanceof Array) {
-        if (compareObjects(oldStAfter, defStAfter)) {
+        if (compareObjects(oldStAfter, defStAfter, 0, [{o1: "old " + oldTier.id, o2: "def " + defTier.id}])) {
             console.log("Test successful!");
         } else {
             console.log("Test failed");
@@ -96,91 +96,107 @@ function drawTier(tier) {
 
 }
 
-function compareObjects(o1, o2, depth=0) {
-    if (depth > 0) {
-        let label = "";
-        for (let i = 0; i < depth; i++) {
-            label += "#";
-        }
-        console.log(label);
-    }
+function compareObjects(o1, o2, depth=0, stack=[]) {
     if (typeof(o1) !== typeof(o2)) {
-        console.log("type mismatch!");
-        console.log("o1: " + typeof(o1));
+        printDeep("type mismatch!", depth);
+        printDeep("o1: " + typeof(o1), depth);
         console.log(o1);
-        console.log("o2: " + typeof(o2));
+        printDeep("o2: " + typeof(o2), depth);
         console.log(o2);
+        printDeep("stack:", depth);
+        printStack(stack);
+        console.log("-".repeat(depth));
         return false;
     } else {
         if (o1 === null || o1 === undefined && o1 === o2) {
-            console.log("objects null or undefined");
-            console.log("o1: " + o1);
-            console.log("o2: " + o2);
             return o1 === o2;
         }
 
         if (o1 instanceof Array &&
             o2 instanceof Array) {
-            console.log("comparing arrays");
 
             if (o1.length === o2.length) {
                 let cmp = true;
                 for (let i = 0; i < o1.length; i++) {
 
-                    console.log("recursing on element #" + i);
-                    if (!compareObjects(o1[i], o2[i], depth+1)) {
+                    stack.push({o1: o1[i], o2: o2[i]});
+                    if (!compareObjects(o1[i], o2[i], depth+1, stack)) {
                         cmp = false;
+                        printDeep("fail on element #" + i, depth);
+                        printDeep("stack:", depth);
+                        printStack(stack);
+                        console.log("-".repeat(depth));
                         break;
                     }
                 }
                 return cmp;
             } else {
-                console.log("Arrays of different length!");
-                console.log("o1:");
-                console.log(o1.length);
-                console.log("o2:");
-                console.log(o2.length);
+                printDeep("Arrays of different lengths", depth);
+                printDeep("o1: " + typeof(o1), depth);
+                printDeep(o1.length, depth);
+                printDeep("o2: " + typeof(o2), depth);
+                printDeep(o2.length, depth);
+                printDeep("stack:", depth);
+                printStack(stack);
+                console.log("-".repeat(depth));
                 return false;
             }
 
 
         } else if (typeof(o1) === "object" && o1 && o2) {
-            console.log("comparing objects");
             if (Object.keys(o1).length === Object.keys(o2).length ||
                 Object.keys(o1).every(k => k in o2)) {
-                console.log("keys equal, comparing values");
 
                 let cmp = true;
                 for (let k in o1) {
-                    console.log("recursing on key " + k);
-                    if (!compareObjects(o1[k], o2[k], depth+1)) {
+                    stack.push({o1: o1[k], o2: o2[k]});
+                    if (!compareObjects(o1[k], o2[k], depth+1, stack)) {
                         cmp = false;
+                        printDeep("fail when recursing on key " + k, depth);
+                        printDeep("stack:", depth);
+                        printStack(stack);
+                        console.log("-".repeat(depth));
                         break;
                     }
                 }
                 return cmp;
 
             } else {
-                console.log("Objects have different keys:");
-                console.log("o1: ");
+                printDeep("Objects have different keys:", depth);
+                printDeep("o1: ", depth);
                 console.log(Object.keys(o1));
-                console.log("o2: ");
+                printDeep("o2: ", depth);
                 console.log(Object.keys(o2));
+                printDeep("stack:", depth);
+                printStack(stack);
+                console.log("-".repeat(depth));
                 return false;
             }
 
         } else {
-            console.log("comparing primitives: " + o1 + ", " + o2);
             if (o1 === o2) {
                 return true;
             } else {
-                console.log("primitives not equal: ");
-                console.log("o1: ");
+                printDeep("fail when comparing primitives", depth);
+                printDeep("primitives not equal: ", depth);
+                printDeep("o1: ", depth);
                 console.log(o1);
-                console.log("o2: ");
+                printDeep("o2: ", depth);
                 console.log(o2);
+                printDeep("stack:", depth);
+                printStack(stack);
+                console.log("-".repeat(depth));
                 return false;
             }
         }
     }
+}
+
+
+function printStack(stack) {
+    stack.forEach(o => console.log(o));
+}
+
+function printDeep(str, d=0) {
+    console.log(" ".repeat(d) + str);
 }
