@@ -24,7 +24,7 @@ import { parseCigar } from "./cigar.js";
 import * as R from "ramda";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, drawFeatureTier, prePaint, paint };
+export { renderTier, drawTier, drawFeatureTier, prepareViewport, paint };
 
 
 function renderTier(status, tier) {
@@ -51,7 +51,7 @@ function drawTier(tier) {
 
 
     if (tier.subtiers) {
-        prePaint(tier, canvas, retina, true);
+        prepareViewport(tier, canvas, retina, true);
         paint(tier, canvas, retina, true);
     }
     tier.drawOverlay();
@@ -519,51 +519,8 @@ function drawFeatureTier(tier, canvas)
     tier.subtiers = bumpedSTs;
 }
 
-function prePaint(tier, canvas, retina, clear=true) {
-    let subtiers = tier.subtiers;
-    // console.log(subtiers);
 
-    let desiredWidth = tier.browser.featurePanelWidth + 2000;
-    if (retina) {
-        desiredWidth *= 2;
-    }
-
-    let fpw = tier.viewport.width|0;
-    if (fpw < desiredWidth - 50) {
-        tier.viewport.width = fpw = desiredWidth;
-    }
-
-    let lh = tier.padding;
-    subtiers.forEach(s => lh += s.height + tier.padding);
-    lh += 6;
-    lh = Math.max(lh, tier.browser.minTierHeight);
-
-    let canvasHeight = lh;
-    if (retina) {
-        canvasHeight *= 2;
-    }
-
-    if (canvasHeight != tier.viewport.height) {
-        tier.viewport.height = canvasHeight;
-    }
-
-    let tierHeight = Math.max(lh, tier.browser.minTierHeight);
-    tier.viewportHolder.style.left = '-1000px';
-    tier.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
-    tier.viewport.style.height = '' + lh + 'px';
-    tier.layoutHeight =  Math.max(lh, tier.browser.minTierHeight);
-
-    tier.updateHeight();
-    tier.norigin = tier.browser.viewStart;
-
-    if (clear) {
-        canvas.clearRect(0, 0, fpw, canvasHeight);
-        canvas.save();
-        if (retina) {
-            canvas.scale(2, 2);
-        }
-    }
-
+function drawUnmapped(tier, canvas, padding) {
     let drawStart =  tier.browser.viewStart - 1000.0/tier.browser.scale;
     let drawEnd = tier.browser.viewEnd + 1000.0/tier.browser.scale;
     let unmappedBlocks = [];
@@ -587,12 +544,65 @@ function prePaint(tier, canvas, retina, clear=true) {
         unmappedBlocks.forEach(block => {
             let min = (block.min - tier.browser.viewStart) * tier.browser.scale + 1000;
             let max = (block.max - tier.browser.viewStart) * tier.browser.scale + 1000;
-            canvas.fillRect(min, 0, max - min, lh);
+            canvas.fillRect(min, 0, max - min, padding);
         });
     }
 }
 
-function paint(tier, canvas, retina) {
+function clearViewport(canvas, width, height, retina = false) {
+    canvas.clearRect(0, 0, width, height);
+    canvas.save();
+    if (retina) {
+        canvas.scale(2, 2);
+    }
+}
+
+function prepareViewport(tier, canvas, retina, clear=true) {
+    let desiredWidth = tier.browser.featurePanelWidth + 2000;
+    if (retina) {
+        desiredWidth *= 2;
+    }
+
+    let fpw = tier.viewport.width|0;
+    if (fpw < desiredWidth - 50) {
+        tier.viewport.width = fpw = desiredWidth;
+    }
+
+
+    let lh = tier.padding;
+
+    tier.subtiers.forEach(s => lh += s.height + tier.padding);
+
+    lh += 6;
+    lh = Math.max(lh, tier.browser.minTierHeight);
+
+    let canvasHeight = lh;
+    if (retina) {
+        canvasHeight *= 2;
+    }
+
+    if (canvasHeight != tier.viewport.height) {
+        tier.viewport.height = canvasHeight;
+    }
+
+    let tierHeight = Math.max(lh, tier.browser.minTierHeight);
+    tier.viewportHolder.style.left = '-1000px';
+    tier.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
+    tier.viewport.style.height = '' + lh + 'px';
+    tier.layoutHeight =  Math.max(lh, tier.browser.minTierHeight);
+
+    tier.updateHeight();
+    tier.norigin = tier.browser.viewStart;
+
+    if (clear) {
+        clearViewport(canvas, fpw, canvasHeight);
+    }
+
+    drawUnmapped(tier, canvas, lh);
+
+}
+
+function paint(tier, canvas) {
     let overlayLabelCanvas = new Glyphs.OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
     canvas.translate(offset, tier.padding);
