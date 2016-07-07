@@ -113,8 +113,8 @@ function glyphsForGroup(canvas, features, y, groupElement, tier) {
 
     let labelText = null;
     if ((label && labelWanted) ||
-        (gstyle && (isDasBooleanTrue(gstyle.LABEL)
-                    || isDasBooleanTrue(gstyle.LABELS)))) {  // HACK, LABELS should work.
+        (gstyle && (isDasBooleanTrue(gstyle.LABEL) ||
+                    isDasBooleanTrue(gstyle.LABELS)))) {  // HACK, LABELS should work.
         labelText = groupElement.label || label;
     }
 
@@ -146,8 +146,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let rawMaxPos = ((max - origin + 1) * scale);
     let maxPos = Math.max(rawMaxPos, minPos + 1);
 
-    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-    // "parse" height by ugly coercion
+    let height = (tier.forceHeight || style.HEIGHT || forceHeight || 12) * 1.0;
     height = height * 1.0;
     let requiredHeight = height;
     let bump = style.BUMP && isDasBooleanTrue(style.BUMP);
@@ -155,7 +154,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let glyph;
     let quant;
 
-    // Create one of these glyphs
+    // Create the glyph
     if (glyphType === 'CROSS' ||
         glyphType === 'EX' ||
         glyphType === 'TRIANGLE' ||
@@ -219,13 +218,17 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     } else if (glyphType === '__INSERTION') {
         let ig = new Glyphs.TriangleGlyph(minPos, 5, 'S', 5, tier.browser.baseColors['I']);
         glyph = new Glyphs.LabelledGlyph(canvas, ig, feature.insertion || feature.altAlleles[0], false, 'center', 'above', '7px sans-serif');
+
         if ((maxPos - minPos) > 1) {
-            var fill = style.BGCOLOR || style.COLOR1 || 'green';
-            var bg = new Glyphs.BoxGlyph(minPos, 5, (maxPos - minPos), height, fill, stroke);
+            let stroke = style.FGCOLOR || 'red';
+            let fill = style.BGCOLOR || style.COLOR1 || 'green';
+            let bg = new Glyphs.BoxGlyph(minPos, 5, (maxPos - minPos), height, fill, stroke);
             glyph = new Glyphs.GroupGlyph([bg, glyph]);
         }
+
     } else if (glyphType === '__NONE') {
         return null;
+
     } else /* default to BOX */ {
         let stroke = style.FGCOLOR || null;
         let fill = style.BGCOLOR || style.COLOR1 || 'green';
@@ -264,6 +267,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
 
     if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
         quant = null;
+
     if (quant) {
         glyph.quant = quant;
     }
@@ -277,14 +281,12 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
 
 function drawFeatureTier(tier, canvas)
 {
-    // why
-    var MIN_PADDING = 3;
+    let MIN_PADDING = 3;
     if (typeof(tier.dasSource.padding) === 'number')
         tier.padding = tier.dasSource.padding;
     else
         tier.padding = MIN_PADDING;
 
-    // this can be done better right
     if (typeof(tier.dasSource.scaleVertical) === 'boolean')
         tier.scaleVertical = tier.dasSource.scaleVertical;
     else
@@ -295,7 +297,6 @@ function drawFeatureTier(tier, canvas)
     let gbsFeatures = {};
     let gbsStyles = {};
 
-    // so this should be a grouping function
     for (let uft in tier.ungroupedFeatures) {
         let ufl = tier.ungroupedFeatures[uft];
         ufl.forEach(f => {
@@ -307,6 +308,7 @@ function drawFeatureTier(tier, canvas)
             if (style.glyph === 'LINEPLOT') {
                 pusho(gbsFeatures, style.id, f);
                 gbsStyles[style.id] = style;
+
             } else {
                 let glyph = glyphForFeature(canvas, f, 0, style, tier);
                 if (glyph)
@@ -329,8 +331,6 @@ function drawFeatureTier(tier, canvas)
     // and this should be a merge supergroups-function
     if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
         for (let sgId in tier.superGroups) {
-        // for (var sg in tier.superGroups) {
-            // let sgg = tier.superGroups[superGroup];
             let sgGroup = tier.superGroups[sgId];
             tier.groups[sgId] = shallowCopy(tier.groups[sgId]);
             let group = tier.groups[sgId];
@@ -411,21 +411,12 @@ function drawFeatureTier(tier, canvas)
                 });
             }
             delete tier.superGroups[sgId]; // Do we want this?
-            // I DON'T KNOW DO WE??
         }
     }
 
     // Glyphify groups.
-    // meaning????
+    let groupIds = Object.keys(tier.groupedFeatures);
 
-    let groupIds = [];
-    for (let gid in tier.groupedFeatures) {
-        groupIds.push(gid);
-    }
-    // let groupIds = Object.keys(tier.groupedFeatures);
-
-    // this has got to be done in a better way... what the hell
-    // arrow function, swap g1 & g2 in sub then return d.
     groupIds.sort((g1, g2) =>
             tier.groupedFeatures[g2][0].score - tier.groupedFeatures[g1][0].score);
 
@@ -433,9 +424,8 @@ function drawFeatureTier(tier, canvas)
 
     groupIds.forEach(gId => {
         let glyphs = glyphsForGroup(canvas, tier.groupedFeatures[gId], 0, tier.groups[gId], tier,
-                               (tier.dasSource.collapseSuperGroups && !tier.bumped)
-                               ? 'collapsed_gene' : 'tent'
-                              );
+                               (tier.dasSource.collapseSuperGroups && !tier.bumped) ?
+                                    'collapsed_gene' : 'tent');
 
         if (glyphs) {
             glyphs.group = tier.groups[gId];
@@ -461,16 +451,11 @@ function drawFeatureTier(tier, canvas)
         });
 
         sgGlyphs.forEach(glyph => {
-            glyphs.push(new PaddedGlyph(glyph, sgMin, sgMax));
+            glyphs.push(new Glyphs.PaddedGlyph(glyph, sgMin, sgMax));
         });
     }
 
-    for (let gId in groupGlyphs) {
-        let glyph = groupGlyphs[gId];
-        if (gId) {
-            glyphs.push(glyph);
-        }
-    }
+    R.map(glyph => glyphs.push(glyph), groupGlyphs);
 
     // Bumping
 
@@ -680,9 +665,8 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
     let minPos = (feature.min - origin) * scale;
     let maxPos = Math.max((feature.max - origin + 1) * scale, minPos + 1);
 
-    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-    // TODO: This is probably completely pointless
-    let requiredHeight = height * 1.0;
+    let height = (tier.forceHeight || style.HEIGHT || forceHeight || 12) * 1.0;
+    let requiredHeight = height;
 
     let glyph = null;
     let quant = null;
@@ -714,7 +698,6 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
             stroke = grad[step];
         }
     }
-
 
     let size = style.SIZE || height;
     if (style.RSIZE) {
@@ -754,7 +737,7 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
 
     }
 
-    if (fill && fill != 'none' && (maxPos - minPos) > 5) {
+    if (fill && fill !== 'none' && (maxPos - minPos) > 5) {
         let boxGlyph = new Glyphs.BoxGlyph(minPos, 0, (maxPos - minPos), size, fill);
         glyph = new Glyphs.GroupGlyph([boxGlyph, glyph]);
     }
@@ -771,35 +754,22 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
 
             return null;
         } else {
-            height = Math.max(1, (relScore - relOrigin) * requiredHeight);
-            y = y + ((1.0 - relOrigin) * requiredHeight) - height;
-            if (relScore >= relOrigin)
-                y -= height;
+            let originShift = x => (x - relOrigin) * requiredHeight;
+            height = Math.max(1, originShift(relScore));
+            y = y + originShift(relScore);
 
-            /*
-            if (relScore >= relOrigin) {
-                height = Math.max(1, (relScore - relOrigin) * requiredHeight);
-                y = y + ((1.0 - relOrigin) * requiredHeight) - height;
-            } else {
-                height = Math.max(1, (relScore - relOrigin) * requiredHeight);
-                y = y + ((1.0 - relOrigin) * requiredHeight);
-            }
-             */
+            if (relScore >= relOrigin)
+                y = y - height;
 
             quant = {min: smin, max: smax};
 
             let heightFudge = 0;
-            let featureLabel;
-            if (typeof(feature.forceLabel) !== 'undefined')
-                featureLabel = feature.forceLabel;
-            else
-                featureLabel = style.LABEL;
+            let featureLabel = R.defaultTo(style.LABEL, feature.forceLabel);
 
             if (isDasBooleanNotFalse(featureLabel) && label && !noLabel) {
-                glyph = new Glyphs.LabelledGlyph(canvas, glyph, label,
-                                                 true, null,
+                glyph = new Glyphs.LabelledGlyph(canvas, glyph, label, true, null,
                                                  featureLabel == 'above' ? 'above' : 'below');
-                if (featureLabel == 'above') {
+                if (featureLabel === 'above') {
                     heightFudge = glyph.textHeight + 2;
                 }
                 noLabel = true;
@@ -820,14 +790,12 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
     let minPos = (feature.min - origin) * scale;
     let maxPos = Math.max((feature.max - origin + 1) * scale, minPos + 1);
 
-    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-    // TODO: This is probably completely pointless
+    let height = (tier.forceHeight || style.HEIGHT || forceHeight || 12) * 1.0;
     let requiredHeight = height * 1.0;
 
     let glyph = null;
     let quant = null;
 
-    // code goes here
     let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
     let [smin, smax] = getScoreMinMax(tier, style);
@@ -852,23 +820,15 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
     let relOrigin = (-1.0 * smin) / (smax - smin);
 
     if (glyphType === 'HISTOGRAM') {
-        // _this_ is probably overkill. fun though
-        let fromOrigin = x => x - Math.max(0, relOrigin);
-        height = Math.abs(fromOrigin(relScore)) * requiredHeight;
-        y = y + fromOrigin(1.0) * requiredHeight;
-        // height = Math.abs(relScore - Math.max(0, relOrigin)) * requiredHeight;
-        // y = y + ((1.0 - Math.max(0, relOrigin)) * requiredHeight);
+        let originShift = x => x - Math.max(0, relOrigin);
+        height = Math.abs(originShift(relScore)) * requiredHeight;
+        y = y + originShift(1.0) * requiredHeight;
 
         if (relScore >= relOrigin)
             y -= height;
 
         if (centerOnAxis)
             y += height / 2;
-
-        if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
-            quant = null;
-        else
-            quant = {min: smin, max: smax};
     }
 
     let stroke = style.FGCOLOR || null;
@@ -902,8 +862,6 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
     return [glyph, quant];
 }
 
-
-// function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, forceHeight) {
 function featureToPointGlyph(tier, feature, style) {
     let scale = tier.browser.scale;
     let origin = tier.browser.viewStart;
@@ -933,8 +891,7 @@ function featureToPointGlyph(tier, feature, style) {
         }
 
         let step = (relScore*grad.length)|0;
-        step = Math.min(0, step);
-        step = Math.max(grad.length - 1, step);
+        step = R.clamp(0, step, grad.length - 1);
         fill = grad[step];
     }
 
@@ -942,7 +899,6 @@ function featureToPointGlyph(tier, feature, style) {
 
     return [glyph, quant];
 }
-
 
 function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
     let scale = tier.browser.scale;
