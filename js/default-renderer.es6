@@ -214,86 +214,8 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         [glyph, quant] = featureToPointGlyph(tier, feature, style);
 
     } else if (glyphType === '__SEQUENCE') {
-        glyph = sequenceGlyph(feature);
-        /*
-        let rawseq = feature.seq;
-        let seq = rawseq;
-        let rawquals = feature.quals;
-        let quals = rawquals;
-        let insertionLabels = isDasBooleanTrue(style.__INSERTIONS);
+        glyph = sequenceGlyph(canvas, tier, feature, style, forceHeight);
 
-        let indels = [];
-        if (feature.cigar) {
-            let ops = parseCigar(feature.cigar);
-            seq = '';
-            quals = '';
-            let cursor = 0;
-            for (var ci = 0; ci < ops.length; ++ci) {
-                var co = ops[ci];
-                if (co.op == 'M') {
-                    seq += rawseq.substr(cursor, co.cnt);
-                    quals += rawquals.substr(cursor, co.cnt);
-                    cursor += co.cnt;
-                } else if (co.op == 'D') {
-                    for (var oi = 0; oi < co.cnt; ++oi) {
-                        seq += '-';
-                        quals += 'Z';
-                    }
-                } else if (co.op == 'I') {
-                    var inseq =  rawseq.substr(cursor, co.cnt);
-                    var ig = new Glyphs.TriangleGlyph(minPos + (seq.length*scale), 5, 'S', 5, tier.browser.baseColors['I']);
-                    if (insertionLabels)
-                        ig = new Glyphs.LabelledGlyph(canvas, ig, inseq, false, 'center', 'above', '7px sans-serif');
-                    ig.feature = {label: 'Insertion: ' + inseq, type: 'insertion', method: 'insertion'};
-                    indels.push(ig);
-
-                    cursor += co.cnt;
-                } else if (co.op == 'S') {
-                    cursor += co.cnt;
-                } else {
-                    console.log('unknown cigop' + co.op);
-                }
-            }
-        }
-
-        var refSeq = getRefSeq(tier, min, max);
-        if (seq && refSeq && (style.__SEQCOLOR === 'mismatch' || style.__SEQCOLOR === 'mismatch-all')) {
-            var mismatchSeq = [];
-            var match = feature.orientation === '-' ? ',' : '.';
-            for (var i = 0; i < seq.length; ++i)
-                mismatchSeq.push(seq[i] == refSeq[i] ? match : seq[i]);
-            seq = mismatchSeq.join('');
-        }
-
-        var strandColor;
-        if (feature.orientation === '-')
-            strandColor = style._minusColor || 'lightskyblue';
-        else
-            strandColor = style._plusColor || 'lightsalmon';
-
-        if (style.__disableQuals)
-            quals = false;
-        
-        glyph = new Glyphs.SequenceGlyph(
-            tier.browser.baseColors, 
-            strandColor, 
-            minPos, 
-            maxPos, 
-            height, 
-            seq, 
-            refSeq, 
-            style.__SEQCOLOR, 
-            quals,
-            !isDasBooleanTrue(style.__CLEARBG),
-            tier.scaleVertical
-        );
-        if (insertionLabels)
-            glyph = new Glyphs.TranslatedGlyph(glyph, 0, 7);
-        if (indels.length > 0) {
-            indels.splice(0, 0, glyph);
-            glyph = new Glyphs.GroupGlyph(indels);
-        }
-        */
     } else if (glyphType === '__INSERTION') {
         let ig = new Glyphs.TriangleGlyph(minPos, 5, 'S', 5, tier.browser.baseColors['I']);
         glyph = new Glyphs.LabelledGlyph(canvas, ig, feature.insertion || feature.altAlleles[0], false, 'center', 'above', '7px sans-serif');
