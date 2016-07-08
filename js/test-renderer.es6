@@ -11,7 +11,7 @@ import * as OldRenderer from "./old-renderer.js";
 
 import * as DefaultRenderer from "./default-renderer.es6";
 
-export { renderTier, drawTier }
+export { renderTier, drawTier };
 
 
 function renderTier(status, tier) {
@@ -20,8 +20,9 @@ function renderTier(status, tier) {
 }
 
 function drawTier(tier) {
+    console.log("Testing tier: " + tier.id);
+
     let oldTier = shallowCopy(tier);
-    // let oldTierBefore = shallowCopy(oldTier);
     let defTier = shallowCopy(tier);
 
     let oldStBefore = null;
@@ -29,10 +30,8 @@ function drawTier(tier) {
 
     /* Old renderer */
     if (!oldTier.sequenceSource) {
-        // console.log("old, before");
         if (oldTier.subtiers) {
             oldStBefore = JSON.parse(JSON.stringify(oldTier.subtiers));
-            // console.log(Object.keys(oldStBefore));
         } else {
             oldStBefore = oldTier.subtiers;
         }
@@ -52,16 +51,14 @@ function drawTier(tier) {
     let defStAfter = null;
 
     if (!defTier.sequenceSource) {
-        // console.log("def, before");
         if (defTier.subtiers) {
             defStBefore = JSON.parse(JSON.stringify(defTier.subtiers));
-            // console.log(Object.keys(defStBefore));
         } else {
             defStBefore = defTier.subtiers;
         }
 
         let canvas = defTier.viewport.getContext("2d");
-        DefaultRenderer.drawFeatureTier(defTier, canvas);
+        DefaultRenderer.prepareSubtiers(defTier, canvas);
         if (defTier.subtiers) {
             defStAfter = JSON.parse(JSON.stringify(defTier.subtiers));
         } else {
@@ -73,9 +70,9 @@ function drawTier(tier) {
     if (defStAfter instanceof Array &&
         oldStAfter instanceof Array) {
         if (compareObjects(oldStAfter, defStAfter, 0, [{o1: "old " + oldTier.id, o2: "def " + defTier.id}])) {
-            console.log("Test successful!");
+            console.log("Tier " + tier.id + ", Test passed");
         } else {
-            console.log("Test failed");
+            console.log("Tier " + tier.id + ", Test failed");
         }
     }
 
