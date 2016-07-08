@@ -24,7 +24,7 @@ import { parseCigar } from "./cigar.js";
 import * as R from "ramda";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, drawFeatureTier, prepareViewport, paint };
+export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint };
 
 
 function renderTier(status, tier) {
@@ -44,7 +44,7 @@ function drawTier(tier) {
     if (tier.sequenceSource) {
         drawSeqTier(tier, sequence);
     } else if (features) {
-        drawFeatureTier(tier, canvas);
+        prepareSubtiers(tier, canvas);
     } else {
         console.log("No sequence or features in tier!");
     }
@@ -279,152 +279,53 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     return glyph;
 }
 
-function drawFeatureTier(tier, canvas)
-{
-    let MIN_PADDING = 3;
-    if (typeof(tier.dasSource.padding) === 'number')
-        tier.padding = tier.dasSource.padding;
-    else
-        tier.padding = MIN_PADDING;
 
-    if (typeof(tier.dasSource.scaleVertical) === 'boolean')
-        tier.scaleVertical = tier.dasSource.scaleVertical;
-    else
-        tier.scaleVertical = false;
-
+function groupFeatures(tier, canvas) {
     let glyphs = [];
-
     let gbsFeatures = {};
     let gbsStyles = {};
 
-    for (let uft in tier.ungroupedFeatures) {
-        let ufl = tier.ungroupedFeatures[uft];
-        ufl.forEach(f => {
-            let style = tier.styleForFeature(f);
+    R.map(features => {
+        features.forEach(feature => {
+            let style = tier.styleForFeature(feature);
 
-            if (f.parts || !style)
+            if (feature.parts || !style)
                 return;
 
             if (style.glyph === 'LINEPLOT') {
-                pusho(gbsFeatures, style.id, f);
+                pusho(gbsFeatures, style.id, feature);
                 gbsStyles[style.id] = style;
-
             } else {
-                let glyph = glyphForFeature(canvas, f, 0, style, tier);
+                let glyph = glyphForFeature(canvas, feature, 0, style, tier);
                 if (glyph)
                     glyphs.push(glyph);
             }
         });
-    }
+    }, tier.ungroupedFeatures);
 
     for (let gbs in gbsFeatures) {
         let gf = gbsFeatures[gbs];
         let style = gbsStyles[gbs];
-        if (style.glyph == 'LINEPLOT') {
+        if (style.glyph === 'LINEPLOT') {
             let lineGraphGlyphs = makeLineGlyph(gf, style, tier);
             lineGraphGlyphs.forEach(g => glyphs.push(g));
         }
     }
 
-    // Merge supergroups
+    return glyphs;
+}
 
-    // and this should be a merge supergroups-function
-    if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
-        for (let sgId in tier.superGroups) {
-            let sgGroup = tier.superGroups[sgId];
-            tier.groups[sgId] = shallowCopy(tier.groups[sgId]);
-            let group = tier.groups[sgId];
-            group.isSuperGroup = true;
-            let featuresByType = {};
-
-            let sgMin = 10000000000, sgMax = -10000000000;
-            let sgSeg = null;
-
-            sgGroup.forEach((g, i) => {
-                let groupedFeature = tier.groupedFeatures[sgGroup[i]];
-                if (!groupedFeature)
-                    return;
-
-                groupedFeature.forEach(feature => {
-                    pusho(featuresByType, feature.type, feature);
-                    sgMin = Math.min(feature.min, sgMin);
-                    sgMax = Math.max(feature.max, sgMax);
-                    if (feature.segment && !sgSeg)
-                        sgSeg = feature.segment;
-                });
-
-                if (group && !group.links || group.links.length === 0) {
-                    group.links = tier.groups[sgGroup[0]].links;
-                }
-
-                delete tier.groupedFeatures[sgGroup[g]];
-
-            });
-
-            tier.groups[sgId].max = sgMax;
-            tier.groups[sgId].min = sgMin;
-            tier.groups[sgId].segment = sgSeg;
-
-            for (let t in featuresByType) {
-                let features = featuresByType[t];
-                let template = features[0];
-                let loc = null;
-
-                features.forEach(feature => {
-                    let fl = new Range(feature.min, feature.max);
-                    if (!loc) {
-                        loc = fl;
-                    } else {
-                        loc = union(loc, fl);
-                    }
-                });
-
-                let mergedRanges = loc.ranges();
-
-                mergedRanges.forEach(range => {
-                    let posCoverage = ((range.max() | 0) - (range.min() | 0) + 1) * sgGroup.length;
-                    let actCoverage = 0;
-
-                    features.forEach(feature => {
-                        if ((feature.min | 0) <= range.max() &&
-                            (feature.max | 0) >= range.min()) {
-                            let umin = Math.max(feature.min | 0, range.min());
-                            let umax = Math.min(feature.max | 0, range.max());
-                            actCoverage += (umax - umin + 1);
-                        }
-                    });
-
-                    let newFeature = new DASFeature();
-                    for (let key in template) {
-                        newFeature[key] = template[key];
-                    }
-
-                    newFeature.min = range.min();
-                    newFeature.max = range.max();
-                    if (newFeature.label && sgGroup.length > 1) {
-                        newFeature.label += ' (' + sgGroup.length + ' vars)';
-                    }
-
-                    newFeature.visualWeight = ((1.0 * actCoverage) / posCoverage);
-
-                    pusho(tier.groupedFeatures, sgId, newFeature);
-                });
-            }
-            delete tier.superGroups[sgId]; // Do we want this?
-        }
-    }
-
-    // Glyphify groups.
+function glyphifyGroups(tier, canvas, glyphs) {
     let groupIds = Object.keys(tier.groupedFeatures);
+    let groupGlyphs = {};
 
     groupIds.sort((g1, g2) =>
-            tier.groupedFeatures[g2][0].score - tier.groupedFeatures[g1][0].score);
+                  tier.groupedFeatures[g2][0].score - tier.groupedFeatures[g1][0].score);
 
-    let groupGlyphs = {};
 
     groupIds.forEach(gId => {
         let glyphs = glyphsForGroup(canvas, tier.groupedFeatures[gId], 0, tier.groups[gId], tier,
-                               (tier.dasSource.collapseSuperGroups && !tier.bumped) ?
+                                    (tier.dasSource.collapseSuperGroups && !tier.bumped) ?
                                     'collapsed_gene' : 'tent');
 
         if (glyphs) {
@@ -433,34 +334,10 @@ function drawFeatureTier(tier, canvas)
         }
     });
 
-    for (let sgId in tier.superGroups) {
+    return groupGlyphs;
+}
 
-        let superGroup = tier.superGroups[sgId];
-        let sgGlyphs = [];
-
-        let sgMin = 10000000000;
-        let sgMax = -10000000000;
-
-        superGroup.forEach(glyphs => {
-            let gGlyphs = groupGlyphs[glyphs];
-            if (gGlyphs) {
-                sgGlyphs.push(gGlyphs);
-                sgMin = Math.min(sgMin, gGlyphs.min());
-                sgMax = Math.max(sgMax, gGlyphs.max());
-            }
-        });
-
-        sgGlyphs.forEach(glyph => {
-            glyphs.push(new Glyphs.PaddedGlyph(glyph, sgMin, sgMax));
-        });
-    }
-
-    R.map(glyph => glyphs.push(glyph), groupGlyphs);
-
-    // Bumping
-
-    let unbumpedST = new SubTier();
-    let bumpedSTs = [];
+function bumpSubtiers(tier, glyphs) {
     let subtierMax =
             tier.subtierMax ||
             tier.dasSource.subtierMax ||
@@ -468,6 +345,8 @@ function drawFeatureTier(tier, canvas)
 
     let subtiersExceeded = false;
 
+    let unbumpedST = new SubTier();
+    let bumpedSTs = [];
 
     // We want to add each glyph to either the subtier
     // containing unbumped subtiers, or to the first bumped subtier.
@@ -508,6 +387,134 @@ function drawFeatureTier(tier, canvas)
         subtier.glyphs.sort((g1, g2) => (g1.zindex || 0) - (g2.zindex || 0));
     });
 
+    return [bumpedSTs, subtiersExceeded];
+}
+
+function prepareSubtiers(tier, canvas) {
+
+    let MIN_PADDING = 3;
+    tier.padding = typeof(tier.dasSource.padding) === 'number' ?
+        tier.dasSource.padding : MIN_PADDING;
+
+    tier.scaleVertical = typeof(tier.dasSource.scaleVertical) === 'boolean' ?
+        tier.dasSource.scaleVertical : false;
+
+    let glyphs = groupFeatures(tier, canvas);
+
+    // Merge supergroups
+    if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
+        for (let sgId in tier.superGroups) {
+            let sgGroup = tier.superGroups[sgId];
+            tier.groups[sgId] = shallowCopy(tier.groups[sgId]);
+            let group = tier.groups[sgId];
+            group.isSuperGroup = true;
+            let featuresByType = {};
+
+            let sgMin = 10000000000, sgMax = -10000000000;
+            let sgSeg = null;
+
+            sgGroup.forEach((g, i) => {
+                let groupedFeature = tier.groupedFeatures[sgGroup[i]];
+                if (!groupedFeature)
+                    return;
+
+                groupedFeature.forEach(feature => {
+                    pusho(featuresByType, feature.type, feature);
+                    sgMin = Math.min(feature.min, sgMin);
+                    sgMax = Math.max(feature.max, sgMax);
+                    if (feature.segment && !sgSeg)
+                        sgSeg = feature.segment;
+                });
+
+                if (group && !group.links || group.links.length === 0) {
+                    group.links = tier.groups[sgGroup[0]].links;
+                }
+
+                delete tier.groupedFeatures[sgGroup[g]];
+
+            });
+
+            tier.groups[sgId].max = sgMax;
+            tier.groups[sgId].min = sgMin;
+            tier.groups[sgId].segment = sgSeg;
+
+            R.map(features => {
+
+                let template = features[0];
+                let loc = null;
+
+                features.forEach(feature => {
+                    let fl = new Range(feature.min, feature.max);
+                    loc = R.defaultTo(union(loc, fl), fl);
+                });
+
+                let mergedRanges = loc.ranges();
+
+                mergedRanges.forEach(range => {
+                    let posCoverage = ((range.max() | 0) - (range.min() | 0) + 1) * sgGroup.length;
+                    let actCoverage = 0;
+
+                    features.forEach(feature => {
+                        let fmin = feature.min || 0;
+                        let fmax = feature.max || 0;
+                        if (fmin <= range.max() && fmax >= range.min()) {
+
+                            actCoverage += (Math.min(fmax, range.max()) -
+                                            Math.max(fmin, range.min()) + 1);
+                        }
+                    });
+
+                    let newFeature = new DASFeature();
+                    for (let key in template) {
+                        newFeature[key] = template[key];
+                    }
+
+                    newFeature.min = range.min();
+                    newFeature.max = range.max();
+                    if (newFeature.label && sgGroup.length > 1) {
+                        newFeature.label += ' (' + sgGroup.length + ' vars)';
+                    }
+
+                    newFeature.visualWeight = ((1.0 * actCoverage) / posCoverage);
+
+                    pusho(tier.groupedFeatures, sgId, newFeature);
+                });
+            }, featuresByType);
+
+            delete tier.superGroups[sgId]; // Do we want this?
+        }
+    }
+
+    // Glyphify groups.
+
+    let groupGlyphs = glyphifyGroups(tier, canvas, glyphs);
+
+
+    R.map(superGroup => {
+        let sgGlyphs = [];
+        let sgMin = 10000000000;
+        let sgMax = -10000000000;
+
+        superGroup.forEach(glyphs => {
+            let gGlyphs = groupGlyphs[glyphs];
+            if (gGlyphs) {
+                sgGlyphs.push(gGlyphs);
+                sgMin = Math.min(sgMin, gGlyphs.min());
+                sgMax = Math.max(sgMax, gGlyphs.max());
+            }
+        });
+
+        sgGlyphs.forEach(glyph => {
+            glyphs.push(new Glyphs.PaddedGlyph(glyph, sgMin, sgMax));
+        });
+    }, tier.superGroups);
+
+
+    R.map(glyph => glyphs.push(glyph), groupGlyphs);
+
+
+    let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs);
+
     tier.glyphCacheOrigin = tier.browser.viewStart;
 
     if (subtiersExceeded)
@@ -515,8 +522,7 @@ function drawFeatureTier(tier, canvas)
     else
         tier.updateStatus();
 
-    // TODO: try to return the subtiers instead
-    tier.subtiers = bumpedSTs;
+    tier.subtiers = subtiers;
 }
 
 
