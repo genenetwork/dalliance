@@ -1256,9 +1256,14 @@ Browser.prototype.withPreservedSelection = function(f) {
 
 Browser.prototype.refreshTier = function(tier, tierCallback) {
     var renderer = this.getTierRenderer(tier);
-    var renderCallback = tierCallback || renderer.renderTier;
-    if (this.knownSpace) {
-        this.knownSpace.invalidate(tier, renderCallback);
+    if (tier.dasSource.renderer === 'multi') {
+        console.log("what the fuck fuck fuck");
+        renderer.drawTier(tier);
+    } else {
+        var renderCallback = tierCallback || renderer.renderTier;
+        if (this.knownSpace) {
+            this.knownSpace.invalidate(tier, renderCallback);
+        }
     }
 }
 
