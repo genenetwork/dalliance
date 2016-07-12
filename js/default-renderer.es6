@@ -307,7 +307,7 @@ function groupFeatures(tier, canvas) {
         let gf = gbsFeatures[gbs];
         let style = gbsStyles[gbs];
         if (style.glyph === 'LINEPLOT') {
-            let lineGraphGlyphs = makeLineGlyph(gf, style, tier);
+            let lineGraphGlyphs = makeLineGlyph(gf, style, tier, y);
             lineGraphGlyphs.forEach(g => glyphs.push(g));
         }
     }

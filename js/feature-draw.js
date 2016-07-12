@@ -1180,7 +1180,9 @@ DasTier.prototype.styleForFeature = function(f) {
     return maybe;
 }
 
-function makeLineGlyph(features, style, tier) {
+function makeLineGlyph(features, style, tier, yshift) {
+    yshift = yshift || 0;
+
     var origin = tier.browser.viewStart, scale = tier.browser.scale;
     var height = tier.forceHeight || style.HEIGHT || 30;
     var min = tier.quantMin(style);
@@ -1226,7 +1228,7 @@ function makeLineGlyph(features, style, tier) {
             curSign = 1;
         }
 
-        var py = (height - (sc * curSign));
+        var py = (height - (sc * curSign)) + yshift;
         curGlyphPoints.push(px);
         curGlyphPoints.push(py);
         prevPoint = {x: px, y: py};
