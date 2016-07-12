@@ -87,7 +87,7 @@ function glyphsForGroup(canvas, features, y, groupElement, tier) {
             if (isDasBooleanTrue(style.LABEL))
                 labelWanted = true;
 
-            let glyph = glyphForFeature(canvas, f, 0, style, tier, null, true);
+            let glyph = glyphForFeature(canvas, f, y, style, tier, null, true);
             if (glyph)
                 glyphs.push(glyph);
         }
@@ -280,7 +280,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
 }
 
 
-function groupFeatures(tier, canvas) {
+function groupFeatures(tier, canvas, y) {
     let glyphs = [];
     let gbsFeatures = {};
     let gbsStyles = {};
@@ -296,7 +296,7 @@ function groupFeatures(tier, canvas) {
                 pusho(gbsFeatures, style.id, feature);
                 gbsStyles[style.id] = style;
             } else {
-                let glyph = glyphForFeature(canvas, feature, 0, style, tier);
+                let glyph = glyphForFeature(canvas, feature, y, style, tier);
                 if (glyph)
                     glyphs.push(glyph);
             }
@@ -315,7 +315,7 @@ function groupFeatures(tier, canvas) {
     return glyphs;
 }
 
-function glyphifyGroups(tier, canvas, glyphs) {
+function glyphifyGroups(tier, canvas, glyphs, y) {
     let groupIds = Object.keys(tier.groupedFeatures);
     let groupGlyphs = {};
 
@@ -324,7 +324,7 @@ function glyphifyGroups(tier, canvas, glyphs) {
 
 
     groupIds.forEach(gId => {
-        let glyphs = glyphsForGroup(canvas, tier.groupedFeatures[gId], 0, tier.groups[gId], tier,
+        let glyphs = glyphsForGroup(canvas, tier.groupedFeatures[gId], y, tier.groups[gId], tier,
                                     (tier.dasSource.collapseSuperGroups && !tier.bumped) ?
                                     'collapsed_gene' : 'tent');
 
@@ -390,7 +390,7 @@ function bumpSubtiers(tier, glyphs) {
     return [bumpedSTs, subtiersExceeded];
 }
 
-function prepareSubtiers(tier, canvas) {
+function prepareSubtiers(tier, canvas, y=0) {
 
     let MIN_PADDING = 3;
     tier.padding = typeof(tier.dasSource.padding) === 'number' ?
@@ -399,7 +399,7 @@ function prepareSubtiers(tier, canvas) {
     tier.scaleVertical = typeof(tier.dasSource.scaleVertical) === 'boolean' ?
         tier.dasSource.scaleVertical : false;
 
-    let glyphs = groupFeatures(tier, canvas);
+    let glyphs = groupFeatures(tier, canvas, y);
 
     // Merge supergroups
     if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
@@ -487,7 +487,7 @@ function prepareSubtiers(tier, canvas) {
 
     // Glyphify groups.
 
-    let groupGlyphs = glyphifyGroups(tier, canvas, glyphs);
+    let groupGlyphs = glyphifyGroups(tier, canvas, glyphs, y);
 
 
     R.map(superGroup => {
