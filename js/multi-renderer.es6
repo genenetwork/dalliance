@@ -33,38 +33,54 @@ function drawTier(multiTier) {
         canvas.scale(2, 2);
     }
 
-    let tiers = multiTier.browser.tiers.filter(tier => tier.dasSource.multi === true);
-    let subtiers = [];
-    tiers.forEach(tier => {
-        tier.browser.refreshTier(tier);
+    // Filter out only tiers that are to be drawn in this multitier,
+    // and also have fetched data.
+    let tiers = multiTier.browser.tiers
+            .filter(tier => typeof(tier.dasSource.sub) === "object" &&
+                    tier.dasSource.sub.multi_id === multiTier.dasSource.multi.multi_id &&
+                    (tier.currentFeatures || tier.currentSequence));
 
+    let subtiers = [];
+
+    tiers.forEach(tier => {
         let features = tier.currentFeatures;
         let sequence = tier.currentSequence;
+
         if (tier.sequenceSource) {
             drawSeqTier(tier, sequence);
-        } else if (features) {
-            DefaultRenderer.prepareSubtiers(tier, canvas);
-            console.log(tier.subtiers);
         } else {
-            console.log("No sequence or features in tier!");
+            DefaultRenderer.prepareSubtiers(tier, canvas, tier.dasSource.sub.offset);
         }
 
-        // Hacks to make sure these properties aren't undefined/NaN
         if (!multiTier.glyphCacheOrigin)
             multiTier.glyphCacheOrigin = tier.glyphCacheOrigin;
-
-        if (!multiTier.padding)
-            multiTier.padding = tier.padding;
 
         subtiers.push(tier.subtiers);
     });
 
-    multiTier.subtiers = R.flatten(subtiers);
+    let minOffset = R.pipe(
+        R.map(tier => tier.dasSource.sub.offset),
+        R.reduce((acc, offset) => offset > acc ? offset : acc, 0)
+    )(tiers);
 
-    if (multiTier.subtiers) {
-        DefaultRenderer.prepareViewport(multiTier, canvas, retina, true);
-        DefaultRenderer.paint(multiTier, canvas, retina, true);
-    }
+    let canvasHeight = R.pipe(
+        R.map(tier =>
+              R.map(subtier => subtier.height + tier.dasSource.sub.offset,
+                    tier.subtiers)),
+        R.flatten,
+        R.reduce((acc, h) => h > acc ? h : acc, -Infinity)
+    )(tiers);
+
+    prepareViewport(multiTier, canvas, retina, canvasHeight, false);
+
+    tiers.sort((t1, t2) => t1.dasSource.sub.z > t2.dasSource.sub.z);
+
+    tiers.forEach(tier => {
+        canvas.save();
+        DefaultRenderer.paint(tier, canvas, retina, false);
+        canvas.restore();
+    });
+
     multiTier.drawOverlay();
     multiTier.paintQuant();
 
