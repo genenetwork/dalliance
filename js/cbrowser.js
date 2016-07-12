@@ -46,10 +46,12 @@ if (typeof(require) !== 'undefined') {
 
     var DefaultRenderer = require('./default-renderer.es6');
     var OldRenderer = require('./old-renderer.js');
-    var DummyRenderer = require('./dummy-renderer.es6');
+
     var MultiRenderer = require('./multi-renderer.es6');
+    var SubRenderer = require('./sub-renderer.es6');
 
     var TestRenderer = require('./test-renderer.es6');
+    var DummyRenderer = require('./dummy-renderer.es6');
 }
 
 function Region(chr, min, max) {
@@ -67,6 +69,7 @@ function Browser(opts) {
         { 'default': DefaultRenderer,
           'dummy': DummyRenderer,
           'multi': MultiRenderer,
+          'sub': SubRenderer,
           'old': OldRenderer,
           'test': TestRenderer
         };
@@ -1257,7 +1260,6 @@ Browser.prototype.withPreservedSelection = function(f) {
 Browser.prototype.refreshTier = function(tier, tierCallback) {
     var renderer = this.getTierRenderer(tier);
     if (tier.dasSource.renderer === 'multi') {
-        console.log("what the fuck fuck fuck");
         renderer.drawTier(tier);
     } else {
         var renderCallback = tierCallback || renderer.renderTier;
