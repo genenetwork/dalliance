@@ -75,3 +75,43 @@ function drawTier(multiTier) {
     multiTier.originHaxx = 0;
     multiTier.browser.arrangeTiers();
 }
+
+function prepareViewport(tier, canvas, retina, canvasHeight, clear=true) {
+    let desiredWidth = tier.browser.featurePanelWidth + 2000;
+    if (retina) {
+        desiredWidth *= 2;
+    }
+
+    let fpw = tier.viewport.width|0;
+    if (fpw < desiredWidth - 50) {
+        tier.viewport.width = fpw = desiredWidth;
+    }
+
+    // ... shouldn't the padding be enough?
+    canvasHeight += 6;
+    canvasHeight = Math.max(canvasHeight, tier.browser.minTierHeight);
+
+    if (canvasHeight != tier.viewport.height) {
+        tier.viewport.height = canvasHeight;
+
+        if (retina) {
+            tier.viewport.height *= 2;
+        }
+    }
+
+    let tierHeight = Math.max(canvasHeight, tier.browser.minTierHeight);
+    tier.viewportHolder.style.left = '-1000px';
+    tier.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
+    tier.viewport.style.height = '' + canvasHeight + 'px';
+    tier.layoutHeight =  Math.max(canvasHeight, tier.browser.minTierHeight);
+
+    tier.updateHeight();
+    tier.norigin = tier.browser.viewStart;
+
+    if (clear) {
+        DefaultRenderer.clearViewport(canvas, fpw, canvasHeight);
+    }
+
+    DefaultRenderer.drawUnmapped(tier, canvas, canvasHeight);
+
+}

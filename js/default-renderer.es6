@@ -24,7 +24,7 @@ import { parseCigar } from "./cigar.js";
 import * as R from "ramda";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint };
+export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint, drawUnmapped };
 
 
 function renderTier(status, tier) {
