@@ -1216,13 +1216,16 @@ Browser.prototype.reorderTiers = function() {
     var pinnedTiers = [], unpinnedTiers = [];
     for (var i = 0; i < this.tiers.length; ++i) {
         var t = this.tiers[i];
+        var visible = ['sub','dummy'].indexOf(this.tiers[i].dasSource.renderer) === -1;
         if (t.pinned && !this.disablePinning) {
             pinnedTiers.push(t);
-            this.pinnedTierHolder.appendChild(this.tiers[i].row);
+            if (visible)
+                this.pinnedTierHolder.appendChild(this.tiers[i].row);
             hasPinned = true;
         } else {
             unpinnedTiers.push(t);
-            this.tierHolder.appendChild(this.tiers[i].row);
+            if (visible)
+                this.tierHolder.appendChild(this.tiers[i].row);
         }
     }
 
@@ -1393,11 +1396,8 @@ Browser.prototype.refresh = function() {
 
 var defaultTierRenderer = function(status, tier) {
     console.log("DEPRECATED!");
-    // tier.draw();
-    // tier.updateStatus(status);
 }
 
-// Browser.prototype.retrieveTierData = function(tiers, tierRenderer) {
 Browser.prototype.retrieveTierData = function(tiers) {
     this.notifyLocation();
     var width = (this.viewEnd - this.viewStart) + 1;
