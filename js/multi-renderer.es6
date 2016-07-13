@@ -42,6 +42,12 @@ function drawTier(multiTier) {
 
     let subtiers = [];
 
+    let minOffset = R.pipe(
+        R.map(tier => tier.dasSource.sub.offset),
+        R.reduce((acc, offset) => offset > acc ? offset : acc, 0)
+    )(tiers);
+
+
     tiers.forEach(tier => {
         let features = tier.currentFeatures;
         let sequence = tier.currentSequence;
@@ -49,7 +55,7 @@ function drawTier(multiTier) {
         if (tier.sequenceSource) {
             drawSeqTier(tier, sequence);
         } else {
-            DefaultRenderer.prepareSubtiers(tier, canvas, tier.dasSource.sub.offset);
+            DefaultRenderer.prepareSubtiers(tier, canvas, tier.dasSource.sub.offset - minOffset);
         }
 
         if (!multiTier.glyphCacheOrigin)
@@ -58,11 +64,6 @@ function drawTier(multiTier) {
         subtiers.push(tier.subtiers);
     });
 
-    let minOffset = R.pipe(
-        R.map(tier => tier.dasSource.sub.offset),
-        R.reduce((acc, offset) => offset > acc ? offset : acc, 0)
-    )(tiers);
-
     let canvasHeight = R.pipe(
         R.map(tier =>
               R.map(subtier => subtier.height + tier.dasSource.sub.offset,
@@ -70,6 +71,8 @@ function drawTier(multiTier) {
         R.flatten,
         R.reduce((acc, h) => h > acc ? h : acc, -Infinity)
     )(tiers);
+
+    canvasHeight -= minOffset;
 
     prepareViewport(multiTier, canvas, retina, canvasHeight, false);
 
