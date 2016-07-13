@@ -445,7 +445,7 @@ function prepareSubtiers(tier, canvas, y=0) {
 
                 features.forEach(feature => {
                     let fl = new Range(feature.min, feature.max);
-                    loc = R.defaultTo(union(loc, fl), fl);
+                    loc = loc ? union(loc, fl) : fl;
                 });
 
                 let mergedRanges = loc.ranges();
