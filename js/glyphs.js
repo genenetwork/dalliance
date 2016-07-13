@@ -1403,8 +1403,10 @@ PointGlyph.prototype.toSVG = function() {
 }
 
 
-function GridGlyph(height) {
+function GridGlyph(height, yOffset, spacing) {
     this._height = height || 50;
+    this.yOffset = yOffset || 0;
+    this.spacing = spacing || 10;
 }
 
 GridGlyph.prototype.notSelectable = true;
@@ -1427,7 +1429,8 @@ GridGlyph.prototype.draw = function(g) {
     g.lineWidth = 0.1;
 
     g.beginPath();
-    for (var y = 0; y <= this._height; y += 10) {
+    for (var y = this.yOffset; y <= this._height+this.yOffset; y += this.spacing) {
+    // for (var y = 0; y <= this._height; y += 10) {
         g.moveTo(-5000, y);
         g.lineTo(5000, y);
     }

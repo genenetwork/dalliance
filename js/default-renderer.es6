@@ -337,7 +337,7 @@ function glyphifyGroups(tier, canvas, glyphs, y) {
     return groupGlyphs;
 }
 
-function bumpSubtiers(tier, glyphs) {
+function bumpSubtiers(tier, glyphs, gridOffset, gridSpacing) {
     let subtierMax =
             tier.subtierMax ||
             tier.dasSource.subtierMax ||
@@ -378,7 +378,7 @@ function bumpSubtiers(tier, glyphs) {
 
     bumpedSTs.forEach(subtier => {
         if (subtier.quant) {
-            subtier.glyphs.unshift(new Glyphs.GridGlyph(subtier.height));
+            subtier.glyphs.unshift(new Glyphs.GridGlyph(subtier.height, gridOffset, gridSpacing));
         }
     });
 
@@ -513,7 +513,7 @@ function prepareSubtiers(tier, canvas, y=0) {
     R.map(glyph => glyphs.push(glyph), groupGlyphs);
 
 
-    let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs);
+    let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs, y);
 
     tier.glyphCacheOrigin = tier.browser.viewStart;
 
