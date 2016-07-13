@@ -36,20 +36,18 @@ function rulerDrawCallback(canvas, tier) {
 
 
     rulers.map(r => {
-        let rulerHeight = ((r.max - r.value) * tier.viewport.height) -
-                (tier.padding * 2);
+        let rulerY = ((r.max - r.value) * r.height);
         let viewWidth = tier.viewport.width;
         let oldLineWidth = canvas.lineWidth;
 
-        canvas.strokeStyle = "#ff0000";
+        canvas.strokeStyle = r.color;
         canvas.beginPath();
-        canvas.moveTo(-viewWidth, rulerHeight);
+        canvas.moveTo(-viewWidth, rulerY + r.offset);
         // Other parts of the code rely on not having changed the lineWidth...
         // So we need to change it back when we're done.
         canvas.lineWidth = r.width;
-        canvas.lineTo(2*viewWidth, rulerHeight);
+        canvas.lineTo(2*viewWidth, rulerY + r.offset);
         canvas.stroke();
         canvas.lineWidth = oldLineWidth;
     });
-    canvas.save();
 }

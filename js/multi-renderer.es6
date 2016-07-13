@@ -40,13 +40,12 @@ function drawTier(multiTier) {
                     tier.dasSource.sub.multi_id === multiTier.dasSource.multi.multi_id &&
                     (tier.currentFeatures || tier.currentSequence));
 
-    let subtiers = [];
-
+    // The shortest distance from the top of the canvas to a subtier
     let minOffset = R.pipe(
         R.map(tier => tier.dasSource.sub.offset),
-        R.reduce((acc, offset) => offset > acc ? offset : acc, 0)
+        R.reduce((acc, offset) => offset < acc ? offset : acc, 0)
     )(tiers);
-
+    console.log("minOffset: " + minOffset);
 
     tiers.forEach(tier => {
         let features = tier.currentFeatures;
@@ -63,27 +62,28 @@ function drawTier(multiTier) {
 
         if (!multiTier.glyphCacheOrigin)
             multiTier.glyphCacheOrigin = tier.glyphCacheOrigin;
-
-        subtiers.push(tier.subtiers);
     });
 
+    // The canvas should fit all subtiers, including offsets, but no more
     let canvasHeight = R.pipe(
         R.map(tier =>
               R.map(subtier => subtier.height + tier.dasSource.sub.offset,
                     tier.subtiers)),
         R.flatten,
-        R.reduce((acc, h) => h > acc ? h : acc, -Infinity)
+        R.reduce((acc, h) => h > acc ? h : acc, -Infinity),
+        R.add(-minOffset)
     )(tiers);
+    console.log("canvasHeight: " + canvasHeight);
 
-    canvasHeight -= minOffset;
-
-    prepareViewport(multiTier, canvas, retina, canvasHeight, false);
+    prepareViewport(multiTier, canvas, retina, canvasHeight, true);
 
     tiers.sort((t1, t2) => t1.dasSource.sub.z > t2.dasSource.sub.z);
 
     tiers.forEach(tier => {
+        // Need to save and restore canvas to make sure that the subtiers are
+        // drawn on top of one another, if not shifted...
         canvas.save();
-        DefaultRenderer.paint(tier, canvas, retina, false);
+        DefaultRenderer.paint(tier, canvas, retina, true);
         canvas.restore();
     });
 
