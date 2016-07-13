@@ -55,7 +55,10 @@ function drawTier(multiTier) {
         if (tier.sequenceSource) {
             drawSeqTier(tier, sequence);
         } else {
-            DefaultRenderer.prepareSubtiers(tier, canvas, tier.dasSource.sub.offset - minOffset);
+            // Shift subtiers up by the minimum offset, so that there's no dead space
+            DefaultRenderer.prepareSubtiers(tier, canvas,
+                                            tier.dasSource.sub.offset - minOffset,
+                                            false);
         }
 
         if (!multiTier.glyphCacheOrigin)

@@ -24,7 +24,7 @@ import { parseCigar } from "./cigar.js";
 import * as R from "ramda";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint, drawUnmapped };
+export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint, drawUnmapped, clearViewport };
 
 
 function renderTier(status, tier) {
@@ -337,7 +337,7 @@ function glyphifyGroups(tier, canvas, glyphs, y) {
     return groupGlyphs;
 }
 
-function bumpSubtiers(tier, glyphs, gridOffset, gridSpacing) {
+function bumpSubtiers(tier, glyphs, grid, gridOffset, gridSpacing) {
     let subtierMax =
             tier.subtierMax ||
             tier.dasSource.subtierMax ||
@@ -376,11 +376,13 @@ function bumpSubtiers(tier, glyphs, gridOffset, gridSpacing) {
         bumpedSTs = [unbumpedST].concat(bumpedSTs);
     }
 
-    bumpedSTs.forEach(subtier => {
-        if (subtier.quant) {
-            subtier.glyphs.unshift(new Glyphs.GridGlyph(subtier.height, gridOffset, gridSpacing));
-        }
-    });
+    if (grid) {
+        bumpedSTs.forEach(subtier => {
+            if (subtier.quant) {
+                subtier.glyphs.unshift(new Glyphs.GridGlyph(subtier.height, gridOffset, gridSpacing));
+            }
+        });
+    }
 
 
     bumpedSTs.forEach(subtier => {
@@ -390,7 +392,7 @@ function bumpSubtiers(tier, glyphs, gridOffset, gridSpacing) {
     return [bumpedSTs, subtiersExceeded];
 }
 
-function prepareSubtiers(tier, canvas, y=0) {
+function prepareSubtiers(tier, canvas, y=0, grid=true) {
 
     let MIN_PADDING = 3;
     tier.padding = typeof(tier.dasSource.padding) === 'number' ?
@@ -513,7 +515,7 @@ function prepareSubtiers(tier, canvas, y=0) {
     R.map(glyph => glyphs.push(glyph), groupGlyphs);
 
 
-    let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs, y);
+    let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs, grid, y);
 
     tier.glyphCacheOrigin = tier.browser.viewStart;
 
