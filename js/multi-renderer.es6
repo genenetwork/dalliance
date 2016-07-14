@@ -28,6 +28,11 @@ function renderTier(status, tier) {
 
 function drawTier(multiTier) {
     let multiConfig = multiTier.dasSource.multi;
+    let getSubConfig = t => t.dasSource.sub;
+
+    if (!multiTier.padding)
+        multiTier.padding = 3;
+
     let canvas = multiTier.viewport.getContext("2d");
 
     let retina = multiTier.browser.retina && window.devicePixelRatio > 1;
@@ -38,8 +43,8 @@ function drawTier(multiTier) {
     // Filter out only tiers that are to be drawn in this multitier,
     // and also have fetched data.
     let tiers = multiTier.browser.tiers
-            .filter(tier => typeof(tier.dasSource.sub) === "object" &&
-                    tier.dasSource.sub.multi_id === multiTier.dasSource.multi.multi_id &&
+            .filter(tier => typeof(getSubConfig(tier)) === "object" &&
+                    getSubConfig(tier).multi_id === multiConfig.multi_id &&
                     (tier.currentFeatures || tier.currentSequence));
 
     // The shortest distance from the top of the canvas to a subtier
@@ -47,7 +52,6 @@ function drawTier(multiTier) {
         R.map(tier => tier.dasSource.sub.offset),
         R.reduce((acc, offset) => offset < acc ? offset : acc, 0)
     )(tiers);
-    console.log("minOffset: " + minOffset);
 
     tiers.forEach(tier => {
         let features = tier.currentFeatures;
@@ -58,7 +62,7 @@ function drawTier(multiTier) {
         } else {
             // Shift subtiers up by the minimum offset, so that there's no dead space
             DefaultRenderer.prepareSubtiers(tier, canvas,
-                                            tier.dasSource.sub.offset - minOffset,
+                                            getSubConfig(tier).offset - minOffset,
                                             false);
         }
 
@@ -69,17 +73,17 @@ function drawTier(multiTier) {
     // The canvas should fit all subtiers, including offsets, but no more
     let canvasHeight = R.pipe(
         R.map(tier =>
-              R.map(subtier => subtier.height + tier.dasSource.sub.offset,
+              R.map(subtier => subtier.height + getSubConfig(tier).offset,
                     tier.subtiers)),
         R.flatten,
         R.reduce((acc, h) => h > acc ? h : acc, -Infinity),
         R.add(-minOffset)
     )(tiers);
-    console.log("canvasHeight: " + canvasHeight);
 
     prepareViewport(multiTier, canvas, retina, canvasHeight, true);
 
-    tiers.sort((t1, t2) => t1.dasSource.sub.z > t2.dasSource.sub.z);
+    tiers.sort((t1, t2) => getSubConfig(t1).z > getSubConfig(t2).z);
+
     if (multiConfig.grid) {
         let grid = new GridGlyph(canvasHeight,
                                  multiConfig.grid_offset,
@@ -122,8 +126,7 @@ function prepareViewport(tier, canvas, retina, canvasHeight, clear=true) {
         tier.viewport.width = fpw = desiredWidth;
     }
 
-    // ... shouldn't the padding be enough?
-    canvasHeight += 6;
+    canvasHeight += 2*tier.padding;
     canvasHeight = Math.max(canvasHeight, tier.browser.minTierHeight);
 
     if (canvasHeight != tier.viewport.height) {

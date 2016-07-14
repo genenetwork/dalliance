@@ -1220,8 +1220,7 @@ function makeLineGlyph(features, style, tier, yshift) {
                 curGlyphPoints = [];
                 // Need to add the previous point to this sequence,
                 // otherwise there is a gap in the resulting plot
-                curGlyphPoints.push(prevPoint.x);
-                curGlyphPoints.push(prevPoint.y);
+                curGlyphPoints.push(prevPoint);
             }
             prevSign = curSign;
         } else {
@@ -1229,9 +1228,8 @@ function makeLineGlyph(features, style, tier, yshift) {
         }
 
         var py = (height - (sc * curSign)) + yshift;
-        curGlyphPoints.push(px);
-        curGlyphPoints.push(py);
         prevPoint = {x: px, y: py};
+        curGlyphPoints.push(prevPoint);
     });
 
     // Need to add the final sequence of points as well.
