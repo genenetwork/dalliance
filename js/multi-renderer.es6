@@ -3,7 +3,8 @@
 
 import { drawSeqTier } from "./sequence-draw.js";
 
-import { OverlayLabelCanvas } from "./glyphs.js";
+import { OverlayLabelCanvas,
+         GridGlyph} from "./glyphs.js";
 
 import * as DefaultRenderer from "./default-renderer.es6";
 
@@ -79,6 +80,13 @@ function drawTier(multiTier) {
     prepareViewport(multiTier, canvas, retina, canvasHeight, true);
 
     tiers.sort((t1, t2) => t1.dasSource.sub.z > t2.dasSource.sub.z);
+    if (multiConfig.grid) {
+        let grid = new GridGlyph(canvasHeight,
+                                 multiConfig.grid_offset,
+                                 multiConfig.grid_spacing);
+        // pretty hacky way of adding the grid, but it works
+        tiers[tiers.length-1].subtiers[0].glyphs.unshift(grid);
+    }
 
     tiers.forEach(tier => {
         // Need to save and restore canvas to make sure that the subtiers are
