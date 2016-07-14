@@ -84,7 +84,7 @@ function drawTier(multiTier) {
 
     tiers.sort((t1, t2) => getSubConfig(t1).z > getSubConfig(t2).z);
 
-    if (multiConfig.grid) {
+    if (multiConfig.grid && tiers[tiers.length-1].subtiers[0]) {
         let grid = new GridGlyph(canvasHeight,
                                  multiConfig.grid_offset,
                                  multiConfig.grid_spacing);

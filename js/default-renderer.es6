@@ -1053,8 +1053,6 @@ function createQuantOverlay(tier, height, retina=false) {
 function paintQuant(canvas, tier, quant, tics) {
     canvas.save();
 
-    canvas.translate(250, 0);
-
     let h = tier.quantOverlay.height;
     let w = 100;
 
