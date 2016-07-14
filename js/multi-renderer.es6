@@ -26,6 +26,7 @@ function renderTier(status, tier) {
 }
 
 function drawTier(multiTier) {
+    let multiConfig = multiTier.dasSource.multi;
     let canvas = multiTier.viewport.getContext("2d");
 
     let retina = multiTier.browser.retina && window.devicePixelRatio > 1;
@@ -88,7 +89,11 @@ function drawTier(multiTier) {
     });
 
     multiTier.drawOverlay();
-    multiTier.paintQuant();
+
+    if (multiConfig.quant) {
+        let quantCanvas = DefaultRenderer.createQuantOverlay(multiTier, canvasHeight+multiTier.padding*2, retina);
+        DefaultRenderer.paintQuant(quantCanvas, multiTier, multiConfig.quant, 10);
+    }
 
     if (typeof(multiTier.dasSource.drawCallback) === "function") {
         multiTier.dasSource.drawCallback(canvas, multiTier);

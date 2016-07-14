@@ -21,10 +21,21 @@ import { makeGradient } from "./color.js";
 
 import { parseCigar } from "./cigar.js";
 
+import { formatQuantLabel } from "./numformats";
+
 import * as R from "ramda";
 
 // renderTier and drawTier MUST be exported. paint is used in other renderers
-export { renderTier, drawTier, prepareSubtiers, prepareViewport, paint, drawUnmapped, clearViewport };
+export { renderTier,
+         drawTier,
+         prepareSubtiers,
+         prepareViewport,
+         paint,
+         drawUnmapped,
+         clearViewport,
+         createQuantOverlay,
+         paintQuant
+       };
 
 
 function renderTier(status, tier) {
@@ -1016,4 +1027,98 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
     }
 
     return glyph;
+}
+
+// height is subtier height
+function createQuantOverlay(tier, height, retina=false) {
+    //let height = tier.subtiers[0].height
+    // should be modifiable somehow
+    let width = 50;
+
+    tier.quantOverlay.height = height;
+    tier.quantOverlay.width = retina ? width*2 : width;
+    tier.quantOverlay.style.height = '' + (retina ? height/2 : height) + 'px';
+    tier.quantOverlay.style.width = '' + width + 'px';
+    tier.quantOverlay.style.display = 'block';
+
+    let canvas = tier.quantOverlay.getContext('2d');
+
+    if (retina) {
+        canvas.scale(2, 2);
+    }
+
+    return canvas;
+}
+
+function paintQuant(canvas, tier, quant, tics) {
+    canvas.save();
+
+    canvas.translate(250, 0);
+
+    let h = tier.quantOverlay.height;
+    let w = 100;
+
+    let ticSpacing = (h + tier.padding*2) / tics;
+    let ticInterval = (quant.max - quant.min) / tics;
+
+    canvas.fillStyle = 'white';
+    canvas.globalAlpha = 0.6;
+    if (tier.browser.rulerLocation == 'right') {
+        canvas.fillRect(w-30, 0, 30, h + tier.padding*2);
+    } else {
+        canvas.fillRect(0, 0, 30, h + tier.padding*2);
+    }
+    canvas.globalAlpha = 1.0;
+
+    canvas.strokeStyle = 'black';
+    canvas.lineWidth = 1;
+    canvas.beginPath();
+    if (tier.browser.rulerLocation == 'right') {
+        canvas.moveTo(w - 8, tier.padding);
+        canvas.lineTo(w, tier.padding);
+        canvas.lineTo(w, h + tier.padding);
+        canvas.lineTo(w - 8, h + tier.padding);
+
+        for (let t = 1; t < tics-1; t++) {
+            let ty = t*ticSpacing;
+            canvas.moveTo(w, ty);
+            canvas.lineTo(w - 5, ty);
+        }
+    } else {
+        canvas.moveTo(8, tier.padding);
+        canvas.lineTo(0, tier.padding);
+        canvas.lineTo(0, h + tier.padding);
+        canvas.lineTo(8, h + tier.padding);
+
+        for (let t = 1; t < tics-1; t++) {
+            let ty = t*ticSpacing;
+            canvas.moveTo(0, ty);
+            canvas.lineTo(5, ty);
+        }
+    }
+    canvas.stroke();
+
+    canvas.fillStyle = 'black';
+
+    if (tier.browser.rulerLocation == 'right') {
+        canvas.textAlign = 'right';
+        canvas.fillText(formatQuantLabel(quant.max), w-9, 8);
+        canvas.fillText(formatQuantLabel(quant.min), w-9, h + tier.padding);
+
+        for (let t = 1; t < tics-1; t++) {
+            let ty = t*ticSpacing;
+            canvas.fillText(formatQuantLabel((1.0*quant.max) - (t*ticInterval)), w - 9, ty + 3);
+        }
+    } else {
+        canvas.textAlign = 'left';
+        canvas.fillText(formatQuantLabel(quant.max), 9, 8);
+        canvas.fillText(formatQuantLabel(quant.min), 9, h + tier.padding);
+
+        for (let t = 1; t < tics-1; t++) {
+            let ty = t*ticSpacing;
+            canvas.fillText(formatQuantLabel((1.0*quant.max) - (t*ticInterval)), 9, ty + 3);
+        }
+    }
+
+    canvas.restore();
 }
