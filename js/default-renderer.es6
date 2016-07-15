@@ -25,7 +25,8 @@ import { formatQuantLabel } from "./numformats";
 
 import * as R from "ramda";
 
-// renderTier and drawTier MUST be exported. paint is used in other renderers
+// The only functions that must be exported by a renderer are renderTier
+// and drawTier, the rest are exported for use in other renderers.
 export { renderTier,
          drawTier,
          prepareSubtiers,
@@ -385,6 +386,8 @@ function bumpSubtiers(tier, glyphs, grid, gridOffset, gridSpacing) {
         bumpedSTs = [unbumpedST].concat(bumpedSTs);
     }
 
+    // Simple hack to make the horizontal grid in bumped subtiers (e.g. lineplots)
+    // optional and configurable.
     if (grid) {
         bumpedSTs.forEach(subtier => {
             if (subtier.quant) {
@@ -400,6 +403,7 @@ function bumpSubtiers(tier, glyphs, grid, gridOffset, gridSpacing) {
     return [bumpedSTs, subtiersExceeded];
 }
 
+// The whole tier is translated downward on its canvas by y pixels
 function prepareSubtiers(tier, canvas, y=0, grid=true) {
 
     let MIN_PADDING = 3;
@@ -531,7 +535,7 @@ function prepareSubtiers(tier, canvas, y=0, grid=true) {
     tier.subtiers = subtiers;
 }
 
-
+// Fills out areas that haven't been fetched as gray blocks
 function drawUnmapped(tier, canvas, padding) {
     let drawStart =  tier.browser.viewStart - 1000.0/tier.browser.scale;
     let drawEnd = tier.browser.viewEnd + 1000.0/tier.browser.scale;
@@ -569,6 +573,7 @@ function clearViewport(canvas, width, height, retina = false) {
     }
 }
 
+// Make the viewport & canvas the correct size for the tier
 function prepareViewport(tier, canvas, retina, clear=true) {
     let desiredWidth = tier.browser.featurePanelWidth + 2000;
     if (retina) {

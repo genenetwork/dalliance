@@ -14,10 +14,15 @@ export { renderTier, drawTier };
 
 /* Renders multiple tiers in a single track.
    Works by simply drawing several tiers to a single canvas.
-   The tiers that are drawn are ones with the "multi: true"
-   property in their BD config.
+   Actual rendering is done using default-renderer.es6.
+   A multi-tier renderer is configured by adding the following to a tier's
+   configuration:
+   renderer: 'multi',
+   multi: {
+       multi_id: "multi_1",
+   }
 
-   Actual rendering is done using default-renderer.es6
+   All subtiers with the "multi_1" multi_id will be drawn to this tier's canvas.
  */
 
 function renderTier(status, tier) {
@@ -29,6 +34,7 @@ function drawTier(multiTier) {
     let multiConfig = multiTier.dasSource.multi;
     let getSubConfig = t => t.dasSource.sub;
 
+    // Padding is used for finding the correct canvas size and must be set
     if (!multiTier.padding)
         multiTier.padding = 3;
 
@@ -55,12 +61,14 @@ function drawTier(multiTier) {
         if (tier.sequenceSource) {
             drawSeqTier(tier, tier.currentSequence);
         } else {
-            // Shift subtiers up by the minimum offset, so that there's no dead space
+            // Shift subtiers up by the minimum offset,
+            // so that there's no empty space at the top
             DefaultRenderer.prepareSubtiers(tier, canvas,
                                             getSubConfig(tier).offset - minOffset,
                                             false);
         }
 
+        // Must be set for painting to work
         if (!multiTier.glyphCacheOrigin)
             multiTier.glyphCacheOrigin = tier.glyphCacheOrigin;
     });

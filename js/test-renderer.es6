@@ -15,6 +15,8 @@ function renderTier(status, tier) {
     tier.updateStatus(status);
 }
 
+// Testing is done by comparing the subtiers
+// after calling two different versions of drawFeatureTier on a tier
 function drawTier(tier) {
     console.log("Testing tier: " + tier.id);
 
