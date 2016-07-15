@@ -16,18 +16,19 @@ Multitiers are easily used, but require some additional configuration. Their
 source configuration must include a 'multi' object, containing at least a
 "multi_id". The renderer must also be set to 'multi', of course. An example:
 ```javascript
-/*,{name: 'Multi-tier',
-  tier_type: 'qtl',
-  uri: '',
-  renderer: 'multi',
-  multi: {
-      multi_id: "multi_1",
-      grid: true,
-      grid_offset: 0,
-      grid_spacing: 10,
-      quant: { min: 0, max: 100 },
-  },
-}*/
+{
+ name: 'Multi-tier',
+ tier_type: 'qtl',
+ uri: '',
+ renderer: 'multi',
+ multi: {
+     multi_id: "multi_1",
+     grid: true,
+     grid_offset: 0,
+     grid_spacing: 10,
+     quant: { min: 0, max: 100 }
+ }
+}
 ```
 This defines a multi-tier with id "multi_1", an evenly spaced horizontal grid
 starting at the top of the canvas, as well as a vertical ruler from 0 to 100.
@@ -43,18 +44,19 @@ any regular tier in BD, but with the renderer set to 'sub' and a 'sub' object
 supplied, containing the id of the corresponding multi-tier, as well as the
 vertical offset and z-index of the subtier. See the following example:
 ```javascript
-,{name: 'Genes',
-  desc: 'Gene structures from GENCODE M2',
-  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
-  stylesheet_uri: 'http://localhost:8000/gencode.xml',
-  collapseSuperGroups: true,
-  trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix',
-  renderer: 'sub',
-  sub: {
-      multi_id: "multi_1",
-      offset: 100,
-      z: 2,
-  },
+{
+ name: 'Genes',
+ desc: 'Gene structures from GENCODE M2',
+ bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
+ stylesheet_uri: 'http://localhost:8000/gencode.xml',
+ collapseSuperGroups: true,
+ trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix',
+ renderer: 'sub',
+ sub: {
+     multi_id: "multi_1",
+     offset: 100,
+     z: 2
+ }
 }
 ```
 This would define a subtier that's to be rendered in the multi-tier with id
