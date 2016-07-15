@@ -2,8 +2,6 @@
 
 "use strict";
 
-import { DasTier } from "./tier";
-
 export { Ruler, rulerDrawCallback };
 
 

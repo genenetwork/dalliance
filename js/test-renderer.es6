@@ -3,11 +3,7 @@
 
 import { drawFeatureTier as oldDrawFeatureTier } from "./feature-draw.js";
 
-import { drawSeqTier } from "./sequence-draw.js";
-
 import { shallowCopy } from "./utils.js";
-
-import * as OldRenderer from "./old-renderer.js";
 
 import * as DefaultRenderer from "./default-renderer.es6";
 
@@ -25,38 +21,22 @@ function drawTier(tier) {
     let oldTier = shallowCopy(tier);
     let defTier = shallowCopy(tier);
 
-    let oldStBefore = null;
     let oldStAfter = null;
 
     /* Old renderer */
     if (!oldTier.sequenceSource) {
-        if (oldTier.subtiers) {
-            oldStBefore = JSON.parse(JSON.stringify(oldTier.subtiers));
-        } else {
-            oldStBefore = oldTier.subtiers;
-        }
-
         oldDrawFeatureTier(oldTier);
         if (oldTier.subtiers) {
             oldStAfter = JSON.parse(JSON.stringify(oldTier.subtiers));
         } else {
             oldStAfter = oldTier.subtiers;
         }
-
     }
 
     /* New renderer */
-
-    let defStBefore = null;
     let defStAfter = null;
 
     if (!defTier.sequenceSource) {
-        if (defTier.subtiers) {
-            defStBefore = JSON.parse(JSON.stringify(defTier.subtiers));
-        } else {
-            defStBefore = defTier.subtiers;
-        }
-
         let canvas = defTier.viewport.getContext("2d");
         DefaultRenderer.prepareSubtiers(defTier, canvas);
         if (defTier.subtiers) {

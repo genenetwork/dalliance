@@ -3,8 +3,7 @@
 
 import { drawSeqTier } from "./sequence-draw.js";
 
-import { OverlayLabelCanvas,
-         GridGlyph} from "./glyphs.js";
+import { GridGlyph } from "./glyphs.js";
 
 import * as DefaultRenderer from "./default-renderer.es6";
 
@@ -34,7 +33,6 @@ function drawTier(multiTier) {
         multiTier.padding = 3;
 
     let canvas = multiTier.viewport.getContext("2d");
-
     let retina = multiTier.browser.retina && window.devicePixelRatio > 1;
     if (retina) {
         canvas.scale(2, 2);
@@ -42,10 +40,10 @@ function drawTier(multiTier) {
 
     // Filter out only tiers that are to be drawn in this multitier,
     // and also have fetched data.
-    let tiers = multiTier.browser.tiers
-            .filter(tier => typeof(getSubConfig(tier)) === "object" &&
-                    getSubConfig(tier).multi_id === multiConfig.multi_id &&
-                    (tier.currentFeatures || tier.currentSequence));
+    let tiers = multiTier.browser.tiers.
+            filter(tier => typeof(getSubConfig(tier)) === "object" &&
+                   getSubConfig(tier).multi_id === multiConfig.multi_id &&
+                   (tier.currentFeatures || tier.currentSequence));
 
     // The shortest distance from the top of the canvas to a subtier
     let minOffset = R.pipe(
@@ -54,11 +52,8 @@ function drawTier(multiTier) {
     )(tiers);
 
     tiers.forEach(tier => {
-        let features = tier.currentFeatures;
-        let sequence = tier.currentSequence;
-
         if (tier.sequenceSource) {
-            drawSeqTier(tier, sequence);
+            drawSeqTier(tier, tier.currentSequence);
         } else {
             // Shift subtiers up by the minimum offset, so that there's no dead space
             DefaultRenderer.prepareSubtiers(tier, canvas,
@@ -137,7 +132,6 @@ function prepareViewport(tier, canvas, retina, canvasHeight, clear=true) {
         }
     }
 
-    let tierHeight = Math.max(canvasHeight, tier.browser.minTierHeight);
     tier.viewportHolder.style.left = '-1000px';
     tier.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
     tier.viewport.style.height = '' + canvasHeight + 'px';

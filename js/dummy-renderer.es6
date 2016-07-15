@@ -27,11 +27,10 @@ function drawTier(tier) {
         console.log("No sequence or features in tier!");
     }
 
-
     if (tier.subtiers) {
         DefaultRenderer.prepareViewport(tier, canvas, retina, true);
-        //paint(tier, canvas, retina, true);
     }
+
     tier.drawOverlay();
     tier.paintQuant();
 

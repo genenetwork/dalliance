@@ -37,7 +37,6 @@ export { renderTier,
          paintQuant
        };
 
-
 function renderTier(status, tier) {
     drawTier(tier);
     tier.updateStatus(status);
@@ -50,21 +49,20 @@ function drawTier(tier) {
         canvas.scale(2, 2);
     }
 
-    let features = tier.currentFeatures;
-    let sequence = tier.currentSequence;
     if (tier.sequenceSource) {
+        let sequence = tier.currentSequence;
         drawSeqTier(tier, sequence);
-    } else if (features) {
+    } else if (tier.currentFeatures) {
         prepareSubtiers(tier, canvas);
     } else {
         console.log("No sequence or features in tier!");
     }
 
-
     if (tier.subtiers) {
         prepareViewport(tier, canvas, retina, true);
         paint(tier, canvas, retina, true);
     }
+
     tier.drawOverlay();
     tier.paintQuant();
 
@@ -157,9 +155,9 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let rawMaxPos = ((max - origin + 1) * scale);
     let maxPos = Math.max(rawMaxPos, minPos + 1);
 
+    forceHeight = forceHeight * 1.0;
     let height = (tier.forceHeight || style.HEIGHT || forceHeight || 12) * 1.0;
     height = height * 1.0;
-    let requiredHeight = height;
     let bump = style.BUMP && isDasBooleanTrue(style.BUMP);
 
     let glyph;
@@ -395,7 +393,6 @@ function bumpSubtiers(tier, glyphs, grid, gridOffset, gridSpacing) {
         });
     }
 
-
     bumpedSTs.forEach(subtier => {
         subtier.glyphs.sort((g1, g2) => (g1.zindex || 0) - (g2.zindex || 0));
     });
@@ -499,9 +496,7 @@ function prepareSubtiers(tier, canvas, y=0, grid=true) {
     }
 
     // Glyphify groups.
-
     let groupGlyphs = glyphifyGroups(tier, canvas, glyphs, y);
-
 
     R.map(superGroup => {
         let sgGlyphs = [];
@@ -522,9 +517,7 @@ function prepareSubtiers(tier, canvas, y=0, grid=true) {
         });
     }, tier.superGroups);
 
-
     R.map(glyph => glyphs.push(glyph), groupGlyphs);
-
 
     let [subtiers, subtiersExceeded] = bumpSubtiers(tier, glyphs, grid, y);
 
@@ -587,7 +580,6 @@ function prepareViewport(tier, canvas, retina, clear=true) {
         tier.viewport.width = fpw = desiredWidth;
     }
 
-
     let lh = tier.padding;
 
     tier.subtiers.forEach(s => lh += s.height + tier.padding);
@@ -604,7 +596,6 @@ function prepareViewport(tier, canvas, retina, clear=true) {
         tier.viewport.height = canvasHeight;
     }
 
-    let tierHeight = Math.max(lh, tier.browser.minTierHeight);
     tier.viewportHolder.style.left = '-1000px';
     tier.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
     tier.viewport.style.height = '' + lh + 'px';
@@ -774,8 +765,7 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
     if (isDasBooleanTrue(style.SCATTER)) {
         let [smin, smax] = getScoreMinMax(tier, style);
 
-        let relScore = ((1.0 * score) - smin) / (smax-smin);
-        let relOrigin = (-1.0 * smin) / (smax - smin);
+        let [relScore, relOrigin] = relScoreOrigin(score, smin, smax);
 
         if (relScore < 0.0 || relScore > 1.0) {
             // Glyph is out of bounds.
@@ -845,8 +835,7 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
         smax = tmax - ((tmax - tmin) / 2);
     }
 
-    let relScore = ((1.0 * score) - smin) / (smax-smin);
-    let relOrigin = (-1.0 * smin) / (smax - smin);
+    let [relScore, relOrigin] = relScoreOrigin(score, smin, smax);
 
     if (glyphType === 'HISTOGRAM') {
         let originShift = x => x - Math.max(0, relOrigin);
@@ -933,19 +922,12 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
     let scale = tier.browser.scale;
     let origin = tier.browser.viewStart;
 
-    let score = feature.score;
-    let label = feature.label || feature.id;
-
     let min = feature.min;
     let max = feature.max;
     let minPos = (feature.min - origin) * scale;
     let maxPos = Math.max((feature.max - origin + 1) * scale, minPos + 1);
 
-    let height = tier.forceHeight || style.HEIGHT || forceHeight || 12;
-
-    let stroke = style.FGCOLOR || 'black';
-    let fill = style.BGCOLOR || 'none';
-    let outline = style.STROKECOLOR;
+    let height = (tier.forceHeight || style.HEIGHT || forceHeight || 12) * 1.0;
 
     let glyph = null;
 
@@ -993,7 +975,7 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
          style.__SEQCOLOR === 'mismatch-all')) {
         let mismatchSeq = [];
         let match = feature.orientation === '-' ? ',' : '.';
-        seq.forEach((_,i) => mismatchSeq.push(seq[i] == refSeq[i] ? match : seq[i]));
+        seq.forEach((_, i) => mismatchSeq.push(seq[i] == refSeq[i] ? match : seq[i]));
         seq = mismatchSeq.join('');
     }
 
@@ -1031,8 +1013,6 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
 
 // height is subtier height
 function createQuantOverlay(tier, height, retina=false) {
-    //let height = tier.subtiers[0].height
-    // should be modifiable somehow
     let width = 50;
 
     tier.quantOverlay.height = height;
