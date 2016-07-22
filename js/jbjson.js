@@ -1,6 +1,6 @@
 /* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-// 
+//
 // Dalliance Genome Explorer
 // (c) Thomas Down 2006-2013
 //
@@ -31,7 +31,7 @@ function JBrowseStore(base, query) {
 function jbori(strand) {
     if (strand > 0)
         return '+';
-    else if (strand < 0)
+    else if (strand <= 0)
         return '-';
 }
 
@@ -42,37 +42,47 @@ JBrowseStore.prototype.features = function(segment, opts, callback) {
 
     var filters = [];
     if (this.query) {
-	   filters.push(this.query);
+        filters.push(this.query);
     }
     if (segment.isBounded) {
-    	filters.push('start=' + segment.start);
-    	filters.push('end=' + segment.end);
+        filters.push('start=' + segment.start);
+        filters.push('end=' + segment.end);
     }
     if (filters.length > 0) {
-	    url = url + '?' + filters.join('&');
+        url = url + '?' + filters.join('&');
     }
 
     var req = new XMLHttpRequest();
     req.onreadystatechange = function() {
-	if (req.readyState == 4) {
-	    if (req.status >= 300) {
-		    callback(null, 'Error code ' + req.status);
-	    } else {
-		var jf = JSON.parse(req.response)['features'];
-		var features = [];
-		for (fi = 0; fi < jf.length; ++fi) {
-		    var j = jf[fi];
-		    
-		    var f = new DASFeature();
-		    f.segment = segment.name;
-		    f.min = (j['start'] | 0) + 1;
-		    f.max = j['end'] | 0;
-		    if (j.name) {
-			f.label = j.name;
-		    }
+        if (req.readyState == 4) {
+            if (req.status >= 300) {
+                callback(null, 'Error code ' + req.status);
+            } else {
+                var jf = JSON.parse(req.response)['features'];
+                var features = [];
+
+                for (fi = 0; fi < jf.length; ++fi) {
+                    var j = jf[fi];
+                    if (fi < 10) {
+                        console.log(jf[fi]);
+                    }
+
+                    var f = new DASFeature();
+                    f.segment = segment.name;
+                    f.min = (j['start'] | 0) + 1;
+                    f.max = j['end'] | 0;
+
+                    if (j.score) {
+                        f.score = j.score;
+                    }
+
+                    if (j.name) {
+                        f.label = j.name;
+                    }
                     if (j.strand)
                         f.orientation = jbori(j.strand);
-		    f.type = j.type || 'unknown';
+
+                    f.type = j.type || 'unknown';
 
                     if (j.subfeatures && j.subfeatures.length > 0) {
                         f.id = j.uniqueID;
@@ -93,7 +103,7 @@ JBrowseStore.prototype.features = function(segment, opts, callback) {
                             if (sj.type === 'CDS')
                                 cds.push(sf);
                         }
-                        
+
                         if (cds.length > 0) {
                             spans = union(blocks);
                             var txGroup = shallowCopy(f);
@@ -111,7 +121,7 @@ JBrowseStore.prototype.features = function(segment, opts, callback) {
 
                             var tlGroup = shallowCopy(f);
                             cds.forEach(function(cdsExon) {
-                                cdsExon.type = 'translation'
+                                cdsExon.type = 'translation';
                                 cdsExon.groups = [tlGroup];
                                 features.push(cdsExon);
                             });
@@ -121,15 +131,14 @@ JBrowseStore.prototype.features = function(segment, opts, callback) {
                             });
                         }
                     } else {
-		        features.push(f);
+                        features.push(f);
                     }
-		}
-		callback(features);
-	    }
-	}
-	
+                }
+                callback(features);
+            }
+        }
     };
-    
+
     req.open('GET', url, true);
     req.responseType = 'text';
     req.send('');
