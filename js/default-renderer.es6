@@ -239,7 +239,7 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     } else if (glyphType === '__NONE') {
         return null;
 
-    } else /* default to BOX */ {
+    } else if (glyphType === 'BOX') {
         let stroke = style.FGCOLOR || null;
         let fill = style.BGCOLOR || style.COLOR1 || 'green';
         if (style.BGITEM && feature.itemRgb)

@@ -1,5 +1,3 @@
-/* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 "use strict";
 
 var loadCsv = require('../js/csv.js').loadCsv;
@@ -29,7 +27,7 @@ describe('CSV files', function() {
             });
             done();
         });
-    }
+    });
 
     // TODO: make sure the retrieved data actually is correct
     it('can retrieve lines given an interval and additional constraint', function(done) {

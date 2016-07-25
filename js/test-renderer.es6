@@ -68,7 +68,7 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
         printDeep("o2: " + typeof(o2), depth);
         console.log(o2);
         printDeep("stack:", depth);
-        printStack(stack);
+        prettyStack(stack);
         console.log("-".repeat(depth));
         return false;
     } else {
@@ -87,8 +87,6 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                     if (!compareObjects(o1[i], o2[i], depth+1, stack)) {
                         cmp = false;
                         printDeep("fail on element #" + i, depth);
-                        // printDeep("stack:", depth);
-                        // printStack(stack);
                         console.log("-".repeat(depth));
                         break;
                     }
@@ -101,7 +99,7 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                 printDeep("o2: " + typeof(o2), depth);
                 printDeep(o2.length, depth);
                 printDeep("stack:", depth);
-                printStack(stack);
+                prettyStack(stack);
                 console.log("-".repeat(depth));
                 return false;
             }
@@ -117,8 +115,6 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                     if (!compareObjects(o1[k], o2[k], depth+1, stack)) {
                         cmp = false;
                         printDeep("fail when recursing on key " + k, depth);
-                        // printDeep("stack:", depth);
-                        // printStack(stack);
                         console.log("-".repeat(depth));
                         break;
                     }
@@ -132,7 +128,7 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                 printDeep("o2: ", depth);
                 console.log(Object.keys(o2));
                 printDeep("stack:", depth);
-                printStack(stack);
+                prettyStack(stack);
                 console.log("-".repeat(depth));
                 return false;
             }
@@ -148,7 +144,7 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                 printDeep("o2: ", depth);
                 console.log(o2);
                 printDeep("stack:", depth);
-                printStack(stack);
+                prettyStack(stack);
                 console.log("-".repeat(depth));
                 return false;
             }
@@ -162,4 +158,8 @@ function printStack(stack) {
 
 function printDeep(str, d=0) {
     console.log(" ".repeat(d) + str);
+}
+
+function prettyStack(stack) {
+    stack.reverse.forEach((o,i) => printDeep(o, i));
 }
