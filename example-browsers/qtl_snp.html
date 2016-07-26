@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html>
+
+    <head>
+
+        <style>
+        </style>
+
+        <title>Mouse GRCm38 :: Dalliance</title>
+        <script language="javascript" src="../build/dalliance-all.js"></script>
+
+        <script language="javascript">
+
+         var b = new Browser({
+             chr:        '11',
+             defaultStart: 10000000,
+             defaultEnd: 30000000,
+             viewStart:  10000000,
+             viewEnd:    30000000,
+             cookieKey:  'mouse38',
+
+             coordSystem: {
+                 speciesName: 'Mouse',
+                 taxon: 10090,
+                 auth: 'GRCm',
+                 version: 38,
+                 ucscName: 'mm10'
+             },
+
+
+             chains: {
+                 mm9ToMm10: new Chainset('http://www.derkholm.net:8080/das/mm9ToMm10/', 'NCBIM37', 'GRCm38',
+                                         {
+                                             speciesName: 'Mouse',
+                                             taxon: 10090,
+                                             auth: 'NCBIM',
+                                             version: 37,
+                                             ucscName: 'mm9'
+                                         })
+             },
+
+
+             sources:      [{name: 'Genome',
+                             twoBitURI:  'http://www.biodalliance.org/datasets/GRCm38/mm10.2bit',
+                             desc: 'Mouse reference genome build GRCm38',
+                             tier_type: 'sequence',
+                             provides_entrypoints: true}
+                           ,{name: 'Genes',
+                             desc: 'Gene structures from GENCODE M2',
+                             bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
+                             stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
+                             collapseSuperGroups: true,
+                             trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix',
+                             sub: {
+                                 multi_id: "multi_1",
+                                 offset: 0,
+                                 z: 0,
+                             },
+                             renderer: 'sub',
+                           }
+                           ,{name: 'SNP density',
+                             jbURI: "http://192.168.56.100:8880/snp/",
+                             jbQuery: "",
+                             stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',
+                             sub: {
+                                 multi_id: "multi_1",
+                                 offset: 300,
+                                 z: -100,
+                             },
+                             renderer: 'sub',
+                           },
+                           ,{name: 'QTL',
+                             tier_type: 'qtl',
+                             /* uri: 'http://192.168.56.100:8880/static/qtl/lod_bak.csv',*/
+                             /* stylesheet_uri: "http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml",*/
+                             uri: 'http://localhost:8000/lod.csv',
+                             stylesheet_uri: 'http://localhost:8000/qtl-stylesheet.xml',
+                             renderer: 'sub',
+                             sub: {
+                                 multi_id: "multi_1",
+                                 offset: 130,
+                                 z: 2,
+                             },
+                           }
+                           ,{name: 'QTL, SNP Density',
+                             tier_type: 'qtl',
+                             uri: '',
+                             renderer: 'multi',
+                             drawCallback: rulerDrawCallback,
+                             rulers: [{ value: 0.45, min: 0, max: 1, width: 3, height: 200, offset: 130, color: 'darkred' }],
+                             multi: {
+                                 multi_id: "multi_1",
+                                 grid: true,
+                                 grid_offset: 0,
+                                 grid_spacing: 10,
+                             },
+                           }
+                           ,{name: 'Repeats',
+                             desc: 'Repeat annotation from UCSC',
+                             bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',
+                             stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'}],
+             uiPrefix: '../',
+
+             fullScreen: true,
+
+             //renderer: 'test'
+
+
+         });
+
+         b.reset();
+        </script>
+    </head>
+
+    <body>
+        <div id='svgHolder'>Failed to load the Biodalliance genome browser.  Have you run "gulp"?</div>
+    </body>
+</html>
