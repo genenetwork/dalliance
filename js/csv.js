@@ -1,5 +1,3 @@
-/* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 "use strict";
 
 if (typeof(require) !== 'undefined') {
@@ -11,9 +9,12 @@ function CsvFile() {
 
 // TODO: add indexing?
 // Parses the given data? Or returns a thing with the data to be parsed further
-function loadCsv(uri, callback) {
+// options = { uri : string, mode : "step" | "chunk" | "file" }
+function loadCsv(uri, options, callback) {
     var csv = new CsvFile();
+
     csv.uri = uri;
+    csv.options = options;
 
     // This callback is literally only used in the test...
     callback(csv);
@@ -36,6 +37,11 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
     // or just everything if there's no object given.
 
     var self = this;
+    if (!self.options.mode) {
+        self.options.mode = "chunk";
+        console.log("CSV parse mode not set - defaulting to chunks");
+    }
+
     var data = [];
 
     function parseLine(line) {
@@ -81,31 +87,6 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
         });
 
 
-        /*
-        if (results.data[0].chr === chr) {
-            console.log("in chr: " + chr);
-            if (results.data[0].pos > min && results.data[0].pos < max) {
-                console.log("pos: " + results.data[0].pos + "\tin interval");
-                // The callback wraps the parsed line in a DAS feature
-                // TODO: this should be called once per parsed line, in case we use chunks
-                if (parseCallback !== undefined) {
-                    parseCallback(results.data[0]);
-                } else {
-                    data.push(results.data[0]);
-                }
-            }
-        }
-         */
-
-        // This is for _geno files
-        /*
-        if (results.data[0].id > min && (max === 0 || results.data[0].id < max)) {
-            data.push(results.data[0]);
-        } else if (results.data[0].id > max && max !== 0) {
-            console.log("after interval, aborting");
-            parser.abort();
-        }
-        */
     }
 
     // The `step` field is the callback that's called on each
@@ -113,7 +94,7 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
     var config = { download: true,
                    header: true, // to get JSON output
                    // step: step,
-                   chunk: parseChunk,
+                   // chunk: parseChunk,
                    // preview: 10, // simplify trial & error
                    error: function(err, file) {
                        if (doneCallback !== undefined) {
@@ -124,7 +105,27 @@ CsvFile.prototype.fetch = function(filterParams, parseCallback, doneCallback) {
                        if (doneCallback !== undefined) {
                            doneCallback(data);
                        }
-                   }};
+                   }
+                   // complete: function(results, file) {
+                   //     parseChunk(results);
+                   //     if (doneCallback !== undefined) {
+                   //         doneCallback(data);
+                   //     }
+                   // }
+                 };
+
+    if (self.options.mode === "step") {
+        config.step = parseChunk;
+    } else if (self.options.mode === "chunk") {
+        config.chunk = parseChunk;
+    } else if (self.options.mode === "file") {
+        config.complete = function(results, file) {
+            parseChunk(results);
+            if (doneCallback !== undefined) {
+                doneCallback(data);
+            }
+        };
+    }
 
     console.log("uri: " + self.uri);
     Papa.parse(self.uri, config);
