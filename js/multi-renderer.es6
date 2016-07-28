@@ -87,11 +87,13 @@ function drawTier(multiTier) {
 
     tiers.sort((t1, t2) => getSubConfig(t1).z > getSubConfig(t2).z);
 
-    if (multiConfig.grid && tiers[tiers.length-1].subtiers[0]) {
+    // TODO: make it add the glyph on to the first available tier;
+    // crashes if last tier is empty...
+    if (multiConfig.grid && tiers && tiers[tiers.length-1] && tiers[tiers.length-1].subtiers[0]) {
         let grid = new GridGlyph(canvasHeight,
                                  multiConfig.grid_offset,
                                  multiConfig.grid_spacing);
-        // pretty hacky way of adding the grid, but it works
+        // pretty hacky way of adding the grid, but it works (mostly)
         tiers[tiers.length-1].subtiers[0].glyphs.unshift(grid);
     }
 
