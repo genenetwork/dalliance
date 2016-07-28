@@ -20,8 +20,8 @@ if (typeof(require) !== 'undefined') {
 function RqtlGenotypeSource(source) {
     FeatureSourceBase.call(this);
 
-    this.genoCsv = Csv.loadCsv(source.control.geno, function() {});
-    this.gmapCsv = Csv.loadCsv(source.control.gmap, function() {});
+    this.genoCsv = Csv.loadCsv(source.control.geno, {mode: "file"}, function() {});
+    this.gmapCsv = Csv.loadCsv(source.control.gmap, {mode: "file"}, function() {});
 
     this.alleles = source.control.alleles;
     this.genotypes = source.control.genotypes;

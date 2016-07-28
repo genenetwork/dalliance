@@ -46,18 +46,18 @@
                              desc: 'Mouse reference genome build GRCm38',
                              tier_type: 'sequence',
                              provides_entrypoints: true}
-                           ,{name: 'Genes',
-                             desc: 'Gene structures from GENCODE M2',
-                             bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
-                             stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
-                             collapseSuperGroups: true,
-                             trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix',
+                           ,{name: 'QTL',
+                             tier_type: 'qtl',
+                             uri: 'http://192.168.56.100:8880/static/qtl/lod_bak.csv',
+                             stylesheet_uri: "http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml",
+                             /* uri: 'http://localhost:8000/lod.csv',*/
+                             /* stylesheet_uri: 'http://localhost:8000/qtl-stylesheet.xml',*/
+                             renderer: 'sub',
                              sub: {
                                  multi_id: "multi_1",
-                                 offset: 0,
-                                 z: 0,
+                                 offset: 130,
+                                 z: 2,
                              },
-                             renderer: 'sub',
                            }
                            ,{name: 'SNP density',
                              jbURI: "http://192.168.56.100:8880/snp/",
@@ -70,19 +70,6 @@
                              },
                              renderer: 'sub',
                            },
-                           ,{name: 'QTL',
-                             tier_type: 'qtl',
-                             /* uri: 'http://192.168.56.100:8880/static/qtl/lod_bak.csv',*/
-                             /* stylesheet_uri: "http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml",*/
-                             uri: 'http://localhost:8000/lod.csv',
-                             stylesheet_uri: 'http://localhost:8000/qtl-stylesheet.xml',
-                             renderer: 'sub',
-                             sub: {
-                                 multi_id: "multi_1",
-                                 offset: 130,
-                                 z: 2,
-                             },
-                           }
                            ,{name: 'QTL, SNP Density',
                              tier_type: 'qtl',
                              uri: '',

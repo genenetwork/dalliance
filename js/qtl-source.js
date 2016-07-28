@@ -18,13 +18,14 @@ if (typeof(require) !== 'undefined') {
 function QtlMapSource(source) {
     FeatureSourceBase.call(this);
 
-    this.lodCsv = Csv.loadCsv(source.uri, function() {});
+    this.lodCsv = Csv.loadCsv(source.uri, {mode: "file"}, function() {});
 }
 
 QtlMapSource.prototype = Object.create(FeatureSourceBase.prototype);
 QtlMapSource.prototype.constructor = QtlMapSource;
 
 QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callback) {
+    console.log("fetching")
     var self = this;
 
     var cmMin = min / 1000000;
