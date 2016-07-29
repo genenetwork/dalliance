@@ -18,7 +18,7 @@ function renderTier(status, tier) {
 // Testing is done by comparing the subtiers
 // after calling two different versions of drawFeatureTier on a tier
 function drawTier(tier) {
-    console.log("Testing tier: " + tier.id);
+    console.log("Testing tier: " + tier.dasSource.name);
 
     let oldTier = shallowCopy(tier);
     let defTier = shallowCopy(tier);
@@ -52,9 +52,9 @@ function drawTier(tier) {
     if (defStAfter instanceof Array &&
         oldStAfter instanceof Array) {
         if (compareObjects(oldStAfter, defStAfter, 0, [{o1: "old " + oldTier.id, o2: "def " + defTier.id}])) {
-            console.log("Tier " + tier.id + ", Test passed");
+            console.log("Tier " + tier.dasSource.name + ", Test passed");
         } else {
-            console.log("Tier " + tier.id + ", Test failed");
+            console.log("Tier " + tier.dasSource.name + ", Test failed");
         }
     }
 
