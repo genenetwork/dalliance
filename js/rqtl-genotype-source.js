@@ -1,5 +1,3 @@
-/* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 "use strict";
 
 if (typeof(require) !== 'undefined') {
@@ -26,6 +24,8 @@ function RqtlGenotypeSource(source) {
     this.alleles = source.control.alleles;
     this.genotypes = source.control.genotypes;
 
+    this.transposed = true;
+
     // This is where we save all the marker positions
     this.markerPositions = {};
 }
@@ -44,59 +44,75 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
     // each one out to the next
     var prevFeature = null;
 
-    // This fetches the markers and saves their positions
-    this.gmapCsv.fetch({
-        chr: chr,
-        pos: {
-            min: cmMin,
-            max: cmMax
-        }
-    }, function(results, error) {
-        self.markerPositions[results.marker] = results.pos;
-    });
 
-    // And this fetches the genotype data itself, returning features
-    // first argument is null since we want all lines parsed
-    this.genoCsv.fetch(null, function(results, error) {
+    // This fetches the markers and saves their positions
+    this.gmapCsv.fetch(null, function(results, error) {
+        self.markerPositions[results.marker] = results.pos;
+    }, fetchGeno);
+
+
+    // wrapping this as a function to be called by gmapCsv.fetch,
+    // once the marker positions have been fetched
+    var fetchGeno = this.genoCsv.fetch(null, function(results, error) {
+        console.log("markers");
+        console.log(self.markerPositions);
         // this.source.fetch(chr, cmMin, cmMax, function(results, error) {
         // TODO: fix the stylesheet...
         var indivFeatures = [];
+        // this should be a config instead
 
-        // We want to go through all the keys (that aren't 'id') - they're the markers
-        Object.keys(results).map(function(key) {
-            if (key !== 'id') {
-                var feature = new DASFeature();
-                feature.id = results.id;
-                // Features are ordered by type then label
-                feature.label = results.id;
-                feature.type = "id";
-                feature.method = results[key];
-                feature.segment = chr;
+        if (!self.transposed) {
+            Object.keys(results).map(function(key) {
+                if (key !== 'id' || key !== 'marker') {
+                    var feature = new DASFeature();
+                    feature.id = results.id || results.marker;
+                    // Features are ordered by type then label
+                    feature.label = results.id || feature.id;
+                    feature.type = "id";
+                    feature.method = results[key];
+                    feature.segment = chr;
 
-                feature.marker = key;
-                feature.genotype = results[key];
+                    // feature.marker = key;
+                    feature.genotype = results[key];
 
-                var pos = self.markerPositions[key];
-                if (pos) {
-                    feature.min = (pos * 1000000);
+                    var pos = self.markerPositions[key];
+                    if (pos) {
+                        feature.min = (pos * 1000000);
+                    }
+                    // If we're not at the final feature
+                    if (prevFeature !== null) {
+                        prevFeature.max = (pos * 1000000) - 10;
+                        if (prevFeature.max < prevFeature.min)
+                            prevFeature.max = pos * 1000000;
+                        indivFeatures.push(prevFeature);
+                    }
+                    prevFeature = feature;
+
+                    // indivFeatures.push(feature);
                 }
-                // If we're not at the final feature
-                if (prevFeature !== null) {
-                    prevFeature.max = (pos * 1000000) - 10;
-                    indivFeatures.push(prevFeature);
-                }
-                prevFeature = feature;
-
-                // indivFeatures.push(feature);
-            }
-        });
+            });
+        }
         // Need to keep track of all features for all parsed lines
         self.features = self.features.concat(indivFeatures);
 
     }, function(results, error) {
+        console.log(self.transposed);
+        if (self.transposed) {
+            console.log("results");
+            console.log(results);
+            Object.keys(results).map(function(key,i) {
+                if (key !== 'id' || key !== 'marker') {
+                    var column = results['marker'].map(function(r,i) {
+                        return { marker: results['marker'][i], value: r[key]};
+                    });
+                }
+            // });
+        }
         // finally we need to set the size of the last feature and add it
         prevFeature.max = cmMax;
         self.features.push(prevFeature);
+        // console.log("rqtl");
+        // console.log(self.features);
         // when it's all parsed, we can return
         // callback takes status, features, and scale...
         return callback(null, self.features, 1);
@@ -121,7 +137,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     naStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "-"
+        method: "U"
     }, null, naStyle);
 
     var ssStyle = new DASStyle();
@@ -133,7 +149,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     ssStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "SS"
+        method: "B"
     }, null, ssStyle);
 
     var sbStyle = new DASStyle();
@@ -145,7 +161,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     sbStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "SB"
+        method: "H"
     }, null, sbStyle);
 
     var bbStyle = new DASStyle();
@@ -157,7 +173,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     bbStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "BB"
+        method: "D"
     }, null, bbStyle);
 
     return callback(stylesheet);
