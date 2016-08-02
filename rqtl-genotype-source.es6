@@ -1,19 +1,18 @@
+/* jshint esversion: 6 */
 "use strict";
 
-if (typeof(require) !== 'undefined') {
-    var sa = require('./sourceadapters');
-    var dalliance_registerSourceAdapterFactory = sa.registerSourceAdapterFactory;
-    var dalliance_makeParser = sa.makeParser;
-    var FeatureSourceBase = sa.FeatureSourceBase;
+import { registerSourceAdapterFactory,
+         makeParser,
+         FeatureSourceBase
+       } from "./sourceadapters.js";
 
-    var das = require('./das');
-    var DASStylesheet = das.DASStylesheet;
-    var DASStyle = das.DASStyle;
-    var DASFeature = das.DASFeature;
-    var DASGroup = das.DASGroup;
+import { DASStylesheet,
+         DASStyle,
+         DASFeature,
+         DASGroup
+       } from "./das.js";
 
-    var Csv = require('./csv');
-}
+import * as Csv from "./csv.js";
 
 function RqtlGenotypeSource(source) {
     FeatureSourceBase.call(this);
@@ -23,8 +22,6 @@ function RqtlGenotypeSource(source) {
 
     this.alleles = source.control.alleles;
     this.genotypes = source.control.genotypes;
-
-    this.transposed = true;
 
     // This is where we save all the marker positions
     this.markerPositions = {};
@@ -44,70 +41,65 @@ RqtlGenotypeSource.prototype.fetch = function(chr, min, max, scale, types, pool,
     // each one out to the next
     var prevFeature = null;
 
-
     // This fetches the markers and saves their positions
     this.gmapCsv.fetch(null, function(results, error) {
+        console.log(results);
         self.markerPositions[results.marker] = results.pos;
-    }, fetchGeno);
+    });
+    /*this.gmapCsv.fetch({
+        chr: chr,
+        pos: {
+            min: cmMin,
+            max: cmMax
+        }
+    }, function(results, error) {
+        self.markerPositions[results.marker] = results.pos;
+    });*/
 
+    console.log("markers");
+    console.log(self.markerPositions);
 
-    // wrapping this as a function to be called by gmapCsv.fetch,
-    // once the marker positions have been fetched
-    var fetchGeno = this.genoCsv.fetch(null, function(results, error) {
-        console.log("markers");
-        console.log(self.markerPositions);
+    // And this fetches the genotype data itself, returning features
+    // first argument is null since we want all lines parsed
+    this.genoCsv.fetch(null, function(results, error) {
         // this.source.fetch(chr, cmMin, cmMax, function(results, error) {
         // TODO: fix the stylesheet...
         var indivFeatures = [];
-        // this should be a config instead
 
-        if (!self.transposed) {
-            Object.keys(results).map(function(key) {
-                if (key !== 'id' || key !== 'marker') {
-                    var feature = new DASFeature();
-                    feature.id = results.id || results.marker;
-                    // Features are ordered by type then label
-                    feature.label = results.id || feature.id;
-                    feature.type = "id";
-                    feature.method = results[key];
-                    feature.segment = chr;
+        // console.log(Object.keys(results));
+        // We want to go through all the keys (that aren't 'id') - they're the markers
+        Object.keys(results).map(function(key) {
+            if (key !== 'id' || key !== 'marker') {
+                var feature = new DASFeature();
+                feature.id = results.id;
+                // Features are ordered by type then label
+                feature.label = results.id;
+                feature.type = "id";
+                // feature.method = results[key];
+                feature.segment = chr;
 
-                    // feature.marker = key;
-                    feature.genotype = results[key];
+                feature.marker = key;
+                feature.genotype = results[key];
 
-                    var pos = self.markerPositions[key];
-                    if (pos) {
-                        feature.min = (pos * 1000000);
-                    }
-                    // If we're not at the final feature
-                    if (prevFeature !== null) {
-                        prevFeature.max = (pos * 1000000) - 10;
-                        if (prevFeature.max < prevFeature.min)
-                            prevFeature.max = pos * 1000000;
-                        indivFeatures.push(prevFeature);
-                    }
-                    prevFeature = feature;
-
-                    // indivFeatures.push(feature);
+                var pos = self.markerPositions[key];
+                // console.log(pos);
+                if (pos) {
+                    feature.min = (pos * 1000000);
                 }
-            });
-        }
+                // If we're not at the final feature
+                if (prevFeature !== null) {
+                    prevFeature.max = (pos * 1000000) - 10;
+                    indivFeatures.push(prevFeature);
+                }
+                prevFeature = feature;
+
+                // indivFeatures.push(feature);
+            }
+        });
         // Need to keep track of all features for all parsed lines
         self.features = self.features.concat(indivFeatures);
 
     }, function(results, error) {
-        console.log(self.transposed);
-        if (self.transposed) {
-            console.log("results");
-            console.log(results);
-            Object.keys(results).map(function(key,i) {
-                if (key !== 'id' || key !== 'marker') {
-                    var column = results['marker'].map(function(r,i) {
-                        return { marker: results['marker'][i], value: r[key]};
-                    });
-                }
-            // });
-        }
         // finally we need to set the size of the last feature and add it
         prevFeature.max = cmMax;
         self.features.push(prevFeature);
@@ -137,7 +129,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     naStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "U"
+        method: "-"
     }, null, naStyle);
 
     var ssStyle = new DASStyle();
@@ -149,7 +141,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     ssStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "B"
+        method: "SS"
     }, null, ssStyle);
 
     var sbStyle = new DASStyle();
@@ -161,7 +153,7 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     sbStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "H"
+        method: "SB"
     }, null, sbStyle);
 
     var bbStyle = new DASStyle();
@@ -173,14 +165,13 @@ RqtlGenotypeSource.prototype.getStyleSheet = function(callback) {
     bbStyle.BUMP = true;
     stylesheet.pushStyle({
         type: "default",
-        method: "D"
+        method: "BB"
     }, null, bbStyle);
 
     return callback(stylesheet);
 };
 
-// Add the source adapter to BD, so it can be used in the browser
-dalliance_registerSourceAdapterFactory('rqtl-genotype', function(source) {
+registerSourceAdapterFactory('rqtl-genotype', function(source) {
     return {
         features: new RqtlGenotypeSource(source)
     };
