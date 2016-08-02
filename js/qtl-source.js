@@ -12,7 +12,7 @@ if (typeof(require) !== 'undefined') {
     var DASFeature = das.DASFeature;
     var DASGroup = das.DASGroup;
 
-    var Csv = require('./csv');
+    var Csv = require('./csv.es6');
 }
 
 function QtlMapSource(source) {
@@ -25,7 +25,6 @@ QtlMapSource.prototype = Object.create(FeatureSourceBase.prototype);
 QtlMapSource.prototype.constructor = QtlMapSource;
 
 QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callback) {
-    console.log("fetching")
     var self = this;
 
     var cmMin = min / 1000000;
@@ -34,28 +33,29 @@ QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callb
     var features = [];
     var prevPos = 0;
 
-    this.lodCsv.fetch(null, function(results, error) {
-        if (results["Chr"] === chr) {
-            var feature = new DASFeature();
+    this.lodCsv.fetch(function(results, error) {
+        results.forEach(function(row) {
+            if (row["Chr"] === chr) {
+                var feature = new DASFeature();
 
-            feature.segment = chr;
-            var pos = results["Mb"];
+                feature.segment = chr;
+                var pos = row["Mb"];
 
-            feature.min = pos * 1000000;
-            feature.max = pos * 1000000;
+                feature.min = pos * 1000000;
+                feature.max = pos * 1000000;
 
-            if (results["LRS"]) {
-                feature.score = results["LRS"];
-            } else if (results["LOD"]) {
-                feature.score = results["LOD"];
+                if (row["LRS"]) {
+                    feature.score = row["LRS"];
+                } else if (row["LOD"]) {
+                    feature.score = row["LOD"];
+
+                }
+
+                features.push(feature);
             }
-
-            features.push(feature);
-        }
-    }, function (results, error) {
+        });
         return callback(null, features, 1);
     });
-
 };
 
 dalliance_registerSourceAdapterFactory(('qtl'), function(source) {
