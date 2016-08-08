@@ -1784,7 +1784,7 @@ if (typeof(module) !== 'undefined') {
     require('./memstore');
     require('./bedwig');
     require('./vcf');
-    require('./rqtl-genotype-source.js');
+    require('./rqtl-genotype-source.es6');
     require('./qtl-source.js');
     require('./multitrack.js');
 }
