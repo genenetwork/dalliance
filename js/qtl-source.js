@@ -18,7 +18,7 @@ if (typeof(require) !== 'undefined') {
 function QtlMapSource(source) {
     FeatureSourceBase.call(this);
 
-    this.lodCsv = Csv.loadCsv(source.uri, {mode: "file"}, function() {});
+    this.qtlCsv = Csv.loadCsv(source.uri, {mode: "file"}, function() {});
 }
 
 QtlMapSource.prototype = Object.create(FeatureSourceBase.prototype);
@@ -33,9 +33,11 @@ QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callb
     var features = [];
     var prevPos = 0;
 
-    this.lodCsv.fetch(function(results, error) {
+    this.qtlCsv.fetch(function(results, error) {
         results.forEach(function(row) {
+            // console.log(row);
             if (row["Chr"] === chr) {
+                // console.log("adding feature");
                 var feature = new DASFeature();
 
                 feature.segment = chr;
@@ -54,6 +56,7 @@ QtlMapSource.prototype.fetch = function(chr, min, max, scale, types, pool, callb
                 features.push(feature);
             }
         });
+        // console.log(features);
         return callback(null, features, 1);
     });
 };
