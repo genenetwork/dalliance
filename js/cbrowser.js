@@ -77,6 +77,7 @@ function Browser(opts) {
     this.defaultRenderer = opts.renderer || DefaultRenderer;
 
     this.prefix = '//www.biodalliance.org/release-0.14/';
+    this.workerPrefix = opts.workerPrefix || '';
 
     this.sources = [];
     this.tiers = [];
@@ -151,7 +152,7 @@ function Browser(opts) {
 
     this.useFetchWorkers = true;
     this.maxWorkers = 2;
-    this.workerPath = '$$worker-all.js';
+    this.workerPath = '$$'+ this.workerPrefix +'worker-all.js';
     this.resolvers = {};
     this.resolverSeed = 1;
 
