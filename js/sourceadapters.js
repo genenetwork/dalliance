@@ -1,6 +1,6 @@
 /* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-// 
+//
 // Dalliance Genome Explorer
 // (c) Thomas Down 2006-2013
 //
@@ -238,7 +238,7 @@ CachingFeatureSource.prototype.search = function(query, callback) {
 
 CachingFeatureSource.prototype.getDefaultFIPs = function(callback) {
     if (this.source.getDefaultFIPs)
-        return this.source.getDefaultFIPs(callback); 
+        return this.source.getDefaultFIPs(callback);
 }
 
 CachingFeatureSource.prototype.getStyleSheet = function(callback) {
@@ -317,27 +317,27 @@ CachingFeatureSource.prototype.fetch = function(chr, min, max, scale, types, poo
         pool.requestsIssued.then(function() {
             awaitedFeatures.started = true;
             self.source.fetch(
-                chr, 
-                min, 
-                max, 
-                scale, 
+                chr,
+                min,
+                max,
+                scale,
                 typeList,
-                pool, 
+                pool,
                 function(status, features, scale, coverage) {
                     if (!awaitedFeatures.res)
                         awaitedFeatures.provide({status: status, features: features, scale: scale, coverage: coverage});
-                }, 
+                },
                 awaitedFeatures.styleFilters);
         }).catch(function(err) {
             console.log(err);
         });
-    } 
+    }
 
     awaitedFeatures.await(function(af) {
         callback(af.status, af.features, af.scale, af.coverage);
     });
 }
-    
+
 function FeatureSourceBase() {
     this.busy = 0;
     this.activityListeners = [];
@@ -465,7 +465,7 @@ DASFeatureSource.prototype.fetch = function(chr, min, max, scale, types, pool, c
     if (tryMaxBins) {
         fops.maxbins = 1 + (((max - min) / scale) | 0);
     }
-    
+
     var thisB = this;
     thisB.busy++;
     thisB.notifyActivity();
@@ -474,7 +474,7 @@ DASFeatureSource.prototype.fetch = function(chr, min, max, scale, types, pool, c
         new DASSegment(chr, min, max),
         fops,
         function(features, status) {
-            
+
             thisB.busy--;
             thisB.notifyActivity();
 
@@ -549,7 +549,7 @@ DASSequenceSource.prototype.getSeqInfo = function(chr, cnt) {
         return cnt();
     });
 }
-    
+
 
 function TwoBitSequenceSource(source) {
     var thisB = this;
@@ -663,7 +663,7 @@ function BWGFeatureSource(bwgSource) {
 
     var thisB = this;
     this.readiness = 'Connecting';
-    this.bwgSource = this.opts = bwgSource;    
+    this.bwgSource = this.opts = bwgSource;
     thisB.bwgHolder = new Awaited();
 
     if (this.opts.preflight) {
@@ -780,7 +780,7 @@ BWGFeatureSource.prototype.fetch = function(chr, min, max, scale, types, pool, c
         } else {
             data = bwg.getUnzoomedView();
         }
-        
+
         thisB.busy++;
         thisB.notifyActivity();
         data.readWigData(chr, min, max, function(features) {
@@ -901,7 +901,7 @@ BWGFeatureSource.prototype.getStyleSheet = function(callback) {
             wigStyle.LABEL = true;
             wigStyle.ZINDEX = 20;
             stylesheet.pushStyle({type: 'bigbed'}, null, wigStyle);
-	    
+
             wigStyle.glyph = 'BOX';
             wigStyle.FGCOLOR = 'black';
             wigStyle.BGCOLOR = 'red'
@@ -909,7 +909,7 @@ BWGFeatureSource.prototype.getStyleSheet = function(callback) {
             wigStyle.BUMP = true;
             wigStyle.ZINDEX = 20;
             stylesheet.pushStyle({type: 'translation'}, null, wigStyle);
-                    
+
             var tsStyle = new DASStyle();
             tsStyle.glyph = 'BOX';
             tsStyle.FGCOLOR = 'black';
@@ -990,12 +990,12 @@ RemoteBWGFeatureSource.prototype.init = function() {
         this.worker.postCommand({command: 'connectBBI', blob: blob}, cnt);
     } else {
         this.worker.postCommand({
-            command: 'connectBBI', 
-            uri: resolveUrlToPage(uri), 
+            command: 'connectBBI',
+            uri: resolveUrlToPage(uri),
             resolver: this.resolverKey,
             transport: this.bwgSource.transport,
-            credentials: this.bwgSource.credentials}, 
-          cnt); 
+            credentials: this.bwgSource.credentials},
+          cnt);
     }
 }
 
@@ -1043,7 +1043,7 @@ RemoteBWGFeatureSource.prototype.fetch = function(chr, min, max, scale, types, p
                 zoom = thisB.opts.forceReduction;
             }
         }
-        
+
         thisB.worker.postCommand({command: 'fetch', connection: key, chr: chr, min: min, max: max, zoom: zoom}, function(features, error) {
             thisB.busy--;
             thisB.notifyActivity();
@@ -1054,7 +1054,7 @@ RemoteBWGFeatureSource.prototype.fetch = function(chr, min, max, scale, types, p
                 if (is < fs) {
                     fs = is;
                 }
-            } 
+            }
             if (thisB.opts.link) {
                 for (var fi = 0; fi < features.length; ++fi) {
                     var f = features[fi];
@@ -1062,7 +1062,7 @@ RemoteBWGFeatureSource.prototype.fetch = function(chr, min, max, scale, types, p
                         f.links = [new DASLink('Link', thisB.opts.link.replace(/\$\$/, f.label))];
                     }
                 }
-            } 
+            }
             callback(error, features, fs);
         });
     });
@@ -1146,7 +1146,7 @@ RemoteBWGFeatureSource.prototype.getDefaultFIPs = function(callback) {
             // No need to do anything.
         }
     });
-} 
+}
 
 RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
     var thisB = this;
@@ -1155,7 +1155,7 @@ RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
         var bwg = thisB.meta;
         if (!bwg) {
             return callback(null, 'bbi error');
-        } 
+        }
 
         var stylesheet = new DASStylesheet();
         if (bwg.type == 'bigbed') {
@@ -1168,7 +1168,7 @@ RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
             wigStyle.LABEL = true;
             wigStyle.ZINDEX = 20;
             stylesheet.pushStyle({type: 'bigbed'}, null, wigStyle);
-        
+
             wigStyle.glyph = 'BOX';
             wigStyle.FGCOLOR = 'black';
             wigStyle.BGCOLOR = 'red'
@@ -1176,7 +1176,7 @@ RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
             wigStyle.BUMP = true;
             wigStyle.ZINDEX = 20;
             stylesheet.pushStyle({type: 'translation'}, null, wigStyle);
-                    
+
             var tsStyle = new DASStyle();
             tsStyle.glyph = 'BOX';
             tsStyle.FGCOLOR = 'black';
@@ -1205,7 +1205,7 @@ RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
 
         if (bwg.definedFieldCount == 12 && bwg.fieldCount >= 14) {
             stylesheet.geneHint = true;
-        } 
+        }
 
         return callback(stylesheet);
     });
@@ -1213,14 +1213,14 @@ RemoteBWGFeatureSource.prototype.getStyleSheet = function(callback) {
 
 function bamRecordToFeature(r, group) {
     if (r.flag & BamFlags.SEGMENT_UNMAPPED)
-        return; 
-    
+        return;
+
     var len;
     if (r.seq)
         len = r.seq.length;
-    else 
+    else
         len = r.seqLength;
-    
+
     if (r.cigar) {
         len = 0;
         var ops = parseCigar(r.cigar);
@@ -1245,7 +1245,7 @@ function bamRecordToFeature(r, group) {
     f.bamRecord = r;
 
     if (group && (r.flag & BamFlags.MULTIPLE_SEGMENTS)) {
-        f.groups = [{id: r.readName, 
+        f.groups = [{id: r.readName,
                      type: 'readpair'}];
     }
 
@@ -1259,7 +1259,7 @@ function BAMFeatureSource(bamSource) {
     this.bamSource = bamSource;
     this.opts = {credentials: bamSource.credentials, preflight: bamSource.preflight, bamGroup: bamSource.bamGroup};
     this.bamHolder = new Awaited();
-    
+
     if (this.opts.preflight) {
         var pfs = bwg_preflights[this.opts.preflight];
         if (!pfs) {
@@ -1303,7 +1303,7 @@ BAMFeatureSource.prototype.init = function() {
         baiF = new BlobFetchable(this.bamSource.baiBlob);
     } else {
         bamF = new URLFetchable(this.bamSource.bamURI, {credentials: this.opts.credentials, resolver: this.opts.resolver});
-        baiF = new URLFetchable(this.bamSource.baiURI || (this.bamSource.bamURI + '.bai'), 
+        baiF = new URLFetchable(this.bamSource.baiURI || (this.bamSource.bamURI + '.bai'),
                                 {credentials: this.opts.credentials, resolver: this.opts.resolver});
     }
     makeBam(bamF, baiF, null, function(bam, err) {
@@ -1323,10 +1323,10 @@ BAMFeatureSource.prototype.fetch = function(chr, min, max, scale, types, pool, c
     var light = types && (types.length == 1) && (types[0] == 'density');
 
     var thisB = this;
-    
+
     thisB.busy++;
     thisB.notifyActivity();
-    
+
     this.bamHolder.await(function(bam) {
         if (!bam) {
             thisB.busy--;
@@ -1362,7 +1362,7 @@ BAMFeatureSource.prototype.getScales = function() {
 BAMFeatureSource.prototype.getStyleSheet = function(callback) {
     this.bamHolder.await(function(bam) {
 	    var stylesheet = new DASStylesheet();
-                
+
         var densStyle = new DASStyle();
         densStyle.glyph = 'HISTOGRAM';
         densStyle.COLOR1 = 'black';
@@ -1394,7 +1394,7 @@ function RemoteBAMFeatureSource(bamSource, worker) {
     this.worker = worker;
     this.opts = {credentials: bamSource.credentials, preflight: bamSource.preflight, bamGroup: bamSource.bamGroup};
     this.keyHolder = new Awaited();
-    
+
     if (bamSource.resolver) {
         this.resolverKey = browser.registerResolver(bamSource.resolver);
     }
@@ -1427,23 +1427,23 @@ RemoteBAMFeatureSource.prototype.init = function() {    var thisB = this;
         this.worker.postCommand({command: 'connectBAM', blob: blob, indexBlob: indexBlob}, cnt);
     } else {
         this.worker.postCommand({
-            command: 'connectBAM', 
-            uri: resolveUrlToPage(uri), 
+            command: 'connectBAM',
+            uri: resolveUrlToPage(uri),
             resolver: this.resolverKey,
             indexUri: resolveUrlToPage(indexUri),
             credentials: this.bamSource.credentials,
             indexChunks: this.bamSource.indexChunks},
-          cnt); 
+          cnt);
     }
 }
 
 RemoteBAMFeatureSource.prototype.fetch = function(chr, min, max, scale, types, pool, callback) {
     var light = types && (types.length == 1) && (types[0] == 'density');
     var thisB = this;
-    
+
     thisB.busy++;
     thisB.notifyActivity();
-    
+
     this.keyHolder.await(function(key) {
         if (!key) {
             thisB.busy--;
@@ -1480,7 +1480,7 @@ RemoteBAMFeatureSource.prototype.getScales = function() {
 RemoteBAMFeatureSource.prototype.getStyleSheet = function(callback) {
     this.keyHolder.await(function(bam) {
         var stylesheet = new DASStylesheet();
-                
+
         var densStyle = new DASStyle();
         densStyle.glyph = 'HISTOGRAM';
         densStyle.COLOR1 = 'black';
@@ -1506,7 +1506,7 @@ RemoteBAMFeatureSource.prototype.getStyleSheet = function(callback) {
 function MappedFeatureSource(source, mapping) {
     this.source = source;
     this.mapping = mapping;
-    
+
     this.activityListeners = [];
     this.busy = 0;
 }
@@ -1700,7 +1700,7 @@ JBrowseFeatureSource.prototype.getScales = function() {
 
 JBrowseFeatureSource.prototype.getStyleSheet = function(callback) {
     var stylesheet = new DASStylesheet();
-    
+
     var cdsStyle = new DASStyle();
     cdsStyle.glyph = 'BOX';
     cdsStyle.FGCOLOR = 'black';
@@ -1709,7 +1709,7 @@ JBrowseFeatureSource.prototype.getStyleSheet = function(callback) {
     cdsStyle.BUMP = true;
     cdsStyle.ZINDEX = 20;
     stylesheet.pushStyle({type: 'translation'}, null, cdsStyle);
-    
+
     var tsStyle = new DASStyle();
     tsStyle.glyph = 'BOX';
     tsStyle.FGCOLOR = 'black';
@@ -1738,7 +1738,7 @@ JBrowseFeatureSource.prototype.fetch = function(chr, min, max, scale, types, poo
         callback(null, [], scale);
         return;
     }
-    
+
     var fops = {};
 
     this.store.features(
@@ -1785,6 +1785,6 @@ if (typeof(module) !== 'undefined') {
     require('./bedwig');
     require('./vcf');
     require('./rqtl-genotype-source.es6');
-    require('./qtl-source.js');
+    require('./qtl-source.es6');
     require('./multitrack.js');
 }
