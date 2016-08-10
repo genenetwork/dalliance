@@ -38,6 +38,10 @@ class RqtlGenotypeSource extends FeatureSourceBase {
 
 
         this.gmapCsv.fetch((results, error) => {
+            if (error) {
+                return callback(error);
+            }
+
             results.map((row, index) => {
                 let chr = row.chr;
                 let min = R.defaultTo(row.pos, row.Mb);
@@ -53,6 +57,10 @@ class RqtlGenotypeSource extends FeatureSourceBase {
             });
 
             this.genoCsv.fetch((results, error) => {
+                if (error) {
+                    return callback(error);
+                }
+
                 let features = [];
 
                 if (this.transposed) {
