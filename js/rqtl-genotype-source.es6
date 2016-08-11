@@ -15,50 +15,95 @@ import * as Csv from "./csv.es6";
 
 import * as R from "ramda";
 
+
 class RqtlGenotypeSource extends FeatureSourceBase {
     constructor(source) {
         super();
 
-        this.genoCsv = Csv.loadCsv(source.control.geno);
-        this.gmapCsv = Csv.loadCsv(source.control.gmap);
-
-        this.alleles = source.control.alleles;
-        this.genotypes = source.control.genotypes;
-
-        this.transposed = R.defaultTo(true, source.transposed);
-
-        this.markerPositions = {};
+        this.source = source;
+        this.uriBase = source.uriBase;
+        this.control = null;
     }
 
-    fetch(chr, min, max, scale, types, pool, callback) {
-        let cmMin = min / 1000000;
-        let cmMax = max / 1000000;
+    fetchControl() {
+        return new Promise((resolve, reject) => {
+            if (this.source.control) {
+                this.configure(this.source.control);
+                resolve();
+            } else if (this.source.controlUri) {
+                let req = new XMLHttpRequest();
 
-        let prevFeature = null;
+                req.open("GET", this.source.controlUri);
 
+                req.onload = () => {
+                    this.configure(JSON.parse(req.responseText));
+                    resolve();
+                };
 
-        this.gmapCsv.fetch((results, error) => {
-            if (error) {
-                return callback(error);
+                req.onerror = () => {
+                    console.log("what the hell");
+                    console.log(req);
+                    reject();
+                };
+
+                req.send();
             }
+        });
+    }
 
-            results.map((row, index) => {
-                let chr = row.chr;
-                let min = R.defaultTo(row.pos, row.Mb);
-                min = min * 1000000;
-                let max = Infinity;
-                if (index < results.length-1) {
-                    let nextRow = results[index+1];
-                    max = nextRow.Mb * 1000000 - 10;
-                    max = R.defaultTo(nextRow.pos, nextRow.Mb);
-                    max = max * 1000000 - 10;
+    configure(control) {
+        if (!control.geno ||
+            !control.gmap) {
+            let e = new Error("RQTL control misconfigured");
+            console.log(e.stack);
+            return;
+        }
+        console.log(control);
+        this.control = control;
+        this.genoCsv = Csv.loadCsv(this.uriBase + this.control.geno);
+        this.gmapCsv = Csv.loadCsv(this.uriBase + this.control.gmap);
+        console.log(genoCsv);
+        console.log(gmapCsv);
+        this.alleles = this.control.alleles;
+        this.genotypes = this.control.genotypes;
+
+        this.transposed = R.defaultTo(true, this.source.transposed);
+        this.markerPositions = {};
+        console.log("configure complete:");
+        console.log(this);
+    }
+
+
+    fetchGmap() {
+        return new Promise((resolve, reject) => {
+            this.gmapCsv.fetch((results, error) => {
+                if (error) {
+                    reject(error);
                 }
-                this.markerPositions[row.marker] = {chr, min, max};
-            });
 
+                results.map((row, index) => {
+                    let chr = row.chr;
+                    let min = R.defaultTo(row.pos, row.Mb);
+                    min = min * 1000000;
+                    let max = Infinity;
+                    if (index < results.length-1) {
+                        let nextRow = results[index+1];
+                        max = nextRow.Mb * 1000000 - 10;
+                        max = R.defaultTo(nextRow.pos, nextRow.Mb);
+                        max = max * 1000000 - 10;
+                    }
+                    this.markerPositions[row.marker] = {chr, min, max};
+                });
+                resolve();
+            });
+        });
+    }
+
+    fetchGeno(callback) {
+        return new Promise((resolve, reject) => {
             this.genoCsv.fetch((results, error) => {
                 if (error) {
-                    return callback(error);
+                    reject(error);
                 }
 
                 let features = [];
@@ -73,7 +118,7 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                         // then, for each marker, add all the individuals.
                         Object.keys(row).forEach(indId => {
                             if (indId !== "id" || indId !== "marker" &&
-                               this.markerPositions[marker].chr === chr) {
+                                this.markerPositions[marker].chr === chr) {
                                 let feature = new DASFeature();
                                 feature.id = indId;
                                 feature.label = marker;
@@ -106,9 +151,26 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                     });
                 }
 
+                resolve();
                 return callback(null, features, 1);
             });
         });
+    }
+
+
+    fetch(chr, min, max, scale, types, pool, callback) {
+        let cmMin = min / 1000000;
+        let cmMax = max / 1000000;
+
+
+        if (this.control === null) {
+            this.fetchControl()
+                .then(this.fetchGmap()
+                      .then(this.fetchGeno(callback)));
+        } else {
+            this.fetchGmap()
+                .then(this.fetchGeno(callback));
+        }
 
     }
 }
