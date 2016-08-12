@@ -21,7 +21,7 @@ class RqtlGenotypeSource extends FeatureSourceBase {
         super();
 
         this.source = source;
-        this.uriBase = source.uriBase;
+        this.URIBase = source.URIBase;
         this.control = null;
     }
 
@@ -29,11 +29,13 @@ class RqtlGenotypeSource extends FeatureSourceBase {
         return new Promise((resolve, reject) => {
             if (this.source.control) {
                 this.configure(this.source.control);
+
+
                 resolve();
-            } else if (this.source.controlUri) {
+            } else if (this.source.controlURI) {
                 let req = new XMLHttpRequest();
 
-                req.open("GET", this.source.controlUri);
+                req.open("GET", this.source.controlURI);
 
                 req.onload = () => {
                     this.configure(JSON.parse(req.responseText));
@@ -41,8 +43,8 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                 };
 
                 req.onerror = () => {
-                    console.log("what the hell");
-                    console.log(req);
+                    console.log("Error when fetching control file");
+                    console.log(e.stack);
                     reject();
                 };
 
@@ -58,23 +60,18 @@ class RqtlGenotypeSource extends FeatureSourceBase {
             console.log(e.stack);
             return;
         }
-        console.log(control);
         this.control = control;
-        this.genoCsv = Csv.loadCsv(this.uriBase + this.control.geno);
-        this.gmapCsv = Csv.loadCsv(this.uriBase + this.control.gmap);
-        console.log(genoCsv);
-        console.log(gmapCsv);
+        this.genoCsv = Csv.loadCsv(this.URIBase + this.control.geno);
+        this.gmapCsv = Csv.loadCsv(this.URIBase + this.control.gmap);
         this.alleles = this.control.alleles;
         this.genotypes = this.control.genotypes;
 
         this.transposed = R.defaultTo(true, this.source.transposed);
         this.markerPositions = {};
-        console.log("configure complete:");
-        console.log(this);
     }
 
 
-    fetchGmap() {
+    fetchGmap(chr, callback) {
         return new Promise((resolve, reject) => {
             this.gmapCsv.fetch((results, error) => {
                 if (error) {
@@ -88,18 +85,18 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                     let max = Infinity;
                     if (index < results.length-1) {
                         let nextRow = results[index+1];
-                        max = nextRow.Mb * 1000000 - 10;
+                        max = nextRow.Mb * 1000000 - 100;
                         max = R.defaultTo(nextRow.pos, nextRow.Mb);
                         max = max * 1000000 - 10;
                     }
                     this.markerPositions[row.marker] = {chr, min, max};
                 });
-                resolve();
+                resolve(chr, callback);
             });
         });
     }
 
-    fetchGeno(callback) {
+    fetchGeno(chr, callback) {
         return new Promise((resolve, reject) => {
             this.genoCsv.fetch((results, error) => {
                 if (error) {
@@ -117,7 +114,7 @@ class RqtlGenotypeSource extends FeatureSourceBase {
 
                         // then, for each marker, add all the individuals.
                         Object.keys(row).forEach(indId => {
-                            if (indId !== "id" || indId !== "marker" &&
+                            if ((indId !== "id" || indId !== "marker") &&
                                 this.markerPositions[marker].chr === chr) {
                                 let feature = new DASFeature();
                                 feature.id = indId;
@@ -159,17 +156,20 @@ class RqtlGenotypeSource extends FeatureSourceBase {
 
 
     fetch(chr, min, max, scale, types, pool, callback) {
+        console.log("Fetching genotype track");
+
         let cmMin = min / 1000000;
         let cmMax = max / 1000000;
 
 
         if (this.control === null) {
-            this.fetchControl()
-                .then(this.fetchGmap()
-                      .then(this.fetchGeno(callback)));
+            this.fetchControl(chr, callback)
+                .then(() => this.fetchGmap(chr, callback))
+                .then(() => this.fetchGeno(chr, callback));
         } else {
-            this.fetchGmap()
-                .then(this.fetchGeno(callback));
+            this.fetchGmap(chr, callback)
+                // .then(this.fetchGmap)
+                .then(this.fetchGeno);
         }
 
     }
