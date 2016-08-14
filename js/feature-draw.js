@@ -359,7 +359,7 @@ function drawFeatureTier(tier)
     tier.subtiers = bumpedSTs;
     tier.glyphCacheOrigin = tier.browser.viewStart;
 
-    if (subtiersExceeded)
+    if (subtiersExceeded && !tier.browser.noBumpWarning)
         tier.updateStatus('Bumping limit exceeded, use the track editor to see more features');
     else
         tier.updateStatus();
@@ -950,6 +950,8 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
     } else if (gtype === 'ANCHORED_ARROW') {
         var stroke = style.FGCOLOR || 'none';
         var fill = style.BGCOLOR || 'green';
+        if (style.BGITEM && feature.itemRgb)
+            fill = feature.itemRgb;
         gg = new AArrowGlyph(minPos, maxPos, height, fill, stroke, strand);
         gg.bump = true;
     } else if (gtype === 'SPAN') {
@@ -962,14 +964,20 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
     } else if (gtype === 'PRIMERS') {
         var stroke = style.FGCOLOR || 'black';
         var fill = style.BGCOLOR || 'red';
+        if (style.BGITEM && feature.itemRgb)
+            fill = feature.itemRgb;
         gg = new PrimersGlyph(minPos, maxPos, height, fill, stroke);
     } else if (gtype === 'TEXT') {
         var string = style.STRING || 'text';
         var fill = style.FGCOLOR || 'black';
+        if (style.BGITEM && feature.itemRgb)
+            fill = feature.itemRgb;
         gg = new TextGlyph(GLOBAL_GC, minPos, maxPos, height, fill, string);
     } else if (gtype === 'TOOMANY') {
         var stroke = style.FGCOLOR || 'gray';
         var fill = style.BGCOLOR || 'orange';
+        if (style.BGITEM && feature.itemRgb)
+            fill = feature.itemRgb;
         gg = new TooManyGlyph(minPos, maxPos, height, fill, stroke);
     } else if (gtype === 'POINT') {
         var height = tier.forceHeight || style.HEIGHT || 30;

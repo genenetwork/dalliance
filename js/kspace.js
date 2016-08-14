@@ -1,6 +1,6 @@
 /* -*- mode: javascript; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-// 
+//
 // Dalliance Genome Explorer
 // (c) Thomas Down 2006-2013
 //
@@ -37,7 +37,7 @@ if (typeof(require) !== 'undefined') {
 
     var das = require('./das');
     var DASSequence = das.DASSequence;
-    
+
     var Promise = require('es6-promise').Promise;
 }
 
@@ -123,11 +123,11 @@ KnownSpace.prototype.retrieveFeatures = function(tiers, chr, min, max, scale) {
     this.awaitedSeq = new Awaited();
     this.seqWasFetched = false;
     this.viewCount++;
-    
+
     this.startFetchesForTiers(tiers);
     this.pool.notifyRequestsIssued();
 }
-    
+
 function filterFeatures(features, min, max) {
     var ff = [];
     var featuresByGroup = {};
@@ -207,18 +207,18 @@ KnownSpace.prototype.startFetchesForTiers = function(tiers) {
                 if (this.cs.start == smin && this.cs.end == smax) {
                     cachedSeq = this.cs;
                 } else {
-                    cachedSeq = new DASSequence(this.cs.name, smin, smax, this.cs.alphabet, 
+                    cachedSeq = new DASSequence(this.cs.name, smin, smax, this.cs.alphabet,
                                                 this.cs.seq.substring(smin - this.cs.start, smax + 1 - this.cs.start));
                 }
                 return awaitedSeq.provide(cachedSeq);
             }
         }
-        
+
         this.seqSource.fetch(this.chr, smin, smax, this.pool, function(err, seq) {
             if (seq) {
-                if (!thisB.cs || (smin <= thisB.cs.start && smax >= thisB.cs.end) || 
-                    (smin >= thisB.cs.end) || (smax <= thisB.cs.start) || 
-                    ((smax - smin) > (thisB.cs.end - thisB.cs.start))) 
+                if (!thisB.cs || (smin <= thisB.cs.start && smax >= thisB.cs.end) ||
+                    (smin >= thisB.cs.end) || (smax <= thisB.cs.start) ||
+                    ((smax - smin) > (thisB.cs.end - thisB.cs.start)))
                 {
                     thisB.cs = seq;
                 }
@@ -228,7 +228,7 @@ KnownSpace.prototype.startFetchesForTiers = function(tiers) {
                 awaitedSeq.provide(null);
             }
         });
-    } 
+    }
 
     if (gex)
         throw gex;
@@ -256,7 +256,7 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq) {
         if (baton.min < min || baton.max > max) {
             cachedFeatures = filterFeatures(cachedFeatures, min, max);
         }
-        
+
         thisB.provision(tier, baton.chr, intersection(baton.coverage, new Range(min, max)), baton.scale, wantedTypes, cachedFeatures, baton.status, needsSeq ? awaitedSeq : null);
 
         var availableScales = source.getScales();
@@ -268,20 +268,16 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq) {
 
     if (source.instrument)
         console.log('Starting  fetch ' + viewID + ' (' + min + ', ' + max + ')');
-    source.fetch(chr, min, max, this.scale, wantedTypes, this.pool, function(status, features, scale, coverage) {
-        // console.log("Status: " + status);
-        // console.log("Features: " + features);
-        // console.log("Feature 0:");
-        // console.log(features[0]);
-        // console.log("Scale: " + scale);
-        // console.log("Coverage: " + coverage);
-    	if (source.instrument)
-    	    console.log('Finishing fetch ' + viewID);
 
-    	var latestViewID = thisB.latestViews[tier] || -1;
-    	if (thisB.cancelled || latestViewID > viewID) {
-    	    return;
-    	}
+
+    source.fetch(chr, min, max, this.scale, wantedTypes, this.pool, function(status, features, scale, coverage) {
+        if (source.instrument)
+            console.log('Finishing fetch ' + viewID);
+
+        var latestViewID = thisB.latestViews[tier] || -1;
+        if (thisB.cancelled || latestViewID > viewID) {
+            return;
+        }
 
         if (!coverage) {
             coverage = new Range(min, max);
@@ -291,7 +287,7 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq) {
             thisB.featureCache[tier] = new KSCacheBaton(chr, min, max, scale, features, status, coverage);
         }
 
-	    thisB.latestViews[tier] = viewID;
+        thisB.latestViews[tier] = viewID;
         thisB.provision(tier, chr, coverage, scale, wantedTypes, features, status, needsSeq ? awaitedSeq : null);
     }, styleFilters);
     return needsSeq;
@@ -301,6 +297,14 @@ KnownSpace.prototype.provision = function(tier, chr, coverage, actualScale, want
     var tierRenderer = tier.browser.getTierRenderer(tier);
     if (status) {
         tier.setFeatures(chr, coverage, actualScale, [], null);
+        if (!features) {
+            var e = new Error(status);
+            status = "Error fetching data: " + status + "; see browser console";
+            console.log("Error fetching data for tier " + tier.dasSource.name + ":");
+            console.log(tier.dasSource);
+            console.log("Stack trace:");
+            console.log(e.stack)
+        }
         tierRenderer.renderTier(status, tier);
     } else {
         var mayDownsample = false;
