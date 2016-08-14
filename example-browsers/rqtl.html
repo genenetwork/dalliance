@@ -1,0 +1,151 @@
+<!DOCTYPE html> 
+
+<html>
+
+    <head>
+
+        <style>
+        </style>
+
+        <title>R/QTL :: Dalliance</title> 
+        <script language="javascript" src="../build/dalliance-all.js"></script>
+
+
+        <script language="javascript">
+         var ironControl = {
+             "crosstype": "f2",
+             // TODO: these should point to relative URIs
+             "geno": "http://192.168.56.100:8880/genotype/mouse/iron/?file=geno&chr=11",
+             "gmap": "http://192.168.56.100:8880/genotype/mouse/iron/?file=gmap&chr=11",
+             "pheno": "iron_pheno.csv",
+             "phenocovar": "iron_phenocovar.csv",
+             "covar": "iron_covar.csv",
+             "pmap": "iron_pmap.csv",
+             "alleles": [
+                 "S",
+                 "B"
+             ],
+             "genotypes": {
+                 "SS": 1,
+                 "SB": 2,
+                 "BB": 3
+             },
+             "sex": {
+                 "covar": "sex",
+                 "f": "female",
+                 "m": "male"
+             },
+             "cross_info": {
+                 "covar": "cross_direction",
+                 "(SxB)x(SxB)": 0,
+                 "(BxS)x(BxS)": 1
+             },
+             "x_chr": "X",
+             "na.strings": [
+                 "-",
+                 "NA"
+             ]
+         };
+         var b = new Browser({
+             chr:          '11',
+             viewStart:    10000000,
+             viewEnd:      30000000,
+             maxViewWidth: 20000000,
+             cookieKey:    'rqtl',
+
+             coordSystem: {
+                 speciesName: 'Mouse',
+                 taxon: 10090,
+                 auth: 'GRCm',
+                 version: 38,
+                 ucscName: 'mm10'
+             },
+
+
+             chains: {
+                 mm9ToMm10: new Chainset('http://www.derkholm.net:8080/das/mm9ToMm10/', 'NCBIM37', 'GRCm38',
+                                         {
+                                             speciesName: 'Mouse',
+                                             taxon: 10090,
+                                             auth: 'NCBIM',
+                                             version: 37,
+                                             ucscName: 'mm9'
+                                         })
+             },
+
+             sources:
+             [
+                 {name: 'Genome',
+                  twoBitURI:  'http://www.biodalliance.org/datasets/GRCm38/mm10.2bit',
+                  desc: 'Mouse reference genome build GRCm38',
+                  tier_type: 'sequence',
+                  provides_entrypoints: true
+                 },
+                 /* {name:                 'Genemap',*/
+                 /* control: ironControl,*/
+                 /* tier_type:            'rqtl-genotype',*/
+                 /* pinned: true*/
+                 /* },*/
+                 {name: 'Genes',
+                  desc: 'Gene structures from GENCODE M2',
+                  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
+                  collapseSuperGroups: true,
+                  trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'
+                 },
+                 /* {name: 'Repeats',*/
+                 /* desc: 'Repeat annotation from UCSC', */
+                 /* bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',*/
+                 /* stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'*/
+                 /* },*/
+                 /* {name: 'SNP density',*/
+                 /* uri: 'http://192.168.56.100:8880/snp/test.bed.gz',*/
+                 /* tier_type: 'tabix',*/
+                 /* stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',*/
+                 /* payload: 'bed'*/
+                 /* },*/
+                 {name: 'QTL',
+                  tier_type: 'qtl',
+                  uri: 'http://192.168.56.100:8880/qtl/lod.csv',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml',
+                  drawCallback: rulerDrawCallback,
+                  rulers: [{ value: 0.55, min: 0, max: 1, width: 3, color: 'red' }],
+                  renderer: 'dummy',
+                  /* multi: true*/
+                 },
+                 {name: 'Additive effect',
+                  tier_type: 'qtl',
+                  uri: 'http://192.168.56.100:8880/qtl/add.csv',
+                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/additive-stylesheet.xml',
+                  renderer: 'dummy',
+                  multi: true
+                 },
+                 {name: 'Default',
+                  tier_type: 'qtl',
+                  uri: 'http://192.168.56.100:8880/qtl/lod.csv',
+                  renderer: 'multi'
+                 }
+             ],
+
+             setDocumentTitle: true,
+             uiPrefix: '../',
+             maxWorkers: 0,
+
+             fullScreen: true
+
+         });
+
+         b.addFeatureInfoPlugin(function(f, info) {
+             info.add("id", f.id);
+             info.add("marker", f.marker);
+             info.add("genotype", f.genotype);
+         });
+
+        </script>
+    </head>
+
+    <body>
+        <div id='svgHolder'>Failed to load the Biodalliance genome browser.  Have you run "gulp"?</div>
+    </body>
+</html>
+

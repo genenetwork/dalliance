@@ -43,6 +43,15 @@ if (typeof(require) !== 'undefined') {
     var sourcesAreEqualModuloStyle = sourcecompare.sourcesAreEqualModuloStyle;
     var sourceDataURI = sourcecompare.sourceDataURI;
     var sourceStyleURI = sourcecompare.sourceStyleURI;
+
+    var DefaultRenderer = require('./default-renderer.es6');
+    var OldRenderer = require('./old-renderer.js');
+
+    var MultiRenderer = require('./multi-renderer.es6');
+    var SubRenderer = require('./sub-renderer.es6');
+
+    var TestRenderer = require('./test-renderer.es6');
+    var DummyRenderer = require('./dummy-renderer.es6');
 }
 
 function Region(chr, min, max) {
@@ -56,7 +65,19 @@ function Browser(opts) {
         opts = {};
     }
 
+    this.renderers =
+        { 'default': DefaultRenderer,
+          'dummy': DummyRenderer,
+          'multi': MultiRenderer,
+          'sub': SubRenderer,
+          'old': OldRenderer,
+          'test': TestRenderer
+        };
+
+    this.defaultRenderer = opts.renderer || DefaultRenderer;
+
     this.prefix = '//www.biodalliance.org/release-0.14/';
+    this.workerPrefix = opts.workerPrefix || '';
 
     this.sources = [];
     this.tiers = [];
@@ -131,7 +152,7 @@ function Browser(opts) {
 
     this.useFetchWorkers = true;
     this.maxWorkers = 2;
-    this.workerPath = '$$worker-all.js';
+    this.workerPath = '$$'+ this.workerPrefix +'worker-all.js';
     this.resolvers = {};
     this.resolverSeed = 1;
 
@@ -829,7 +850,8 @@ Browser.prototype.touchMoveHandler = function(ev) {
             this.scale = this.zoomInitialScale * (sep/this.zoomInitialSep);
             this.viewStart = scp - (cp/this.scale)|0;
             for (var i = 0; i < this.tiers.length; ++i) {
-                this.tiers[i].draw();
+                tiers[i].getRenderer().drawTier(tiers[i]);
+                // this.tiers[i].draw();
             }
         }
         this.zoomLastSep = sep;
@@ -1195,13 +1217,16 @@ Browser.prototype.reorderTiers = function() {
     var pinnedTiers = [], unpinnedTiers = [];
     for (var i = 0; i < this.tiers.length; ++i) {
         var t = this.tiers[i];
+        var visible = ['sub','dummy'].indexOf(this.tiers[i].dasSource.renderer) === -1;
         if (t.pinned && !this.disablePinning) {
             pinnedTiers.push(t);
-            this.pinnedTierHolder.appendChild(this.tiers[i].row);
+            if (visible)
+                this.pinnedTierHolder.appendChild(this.tiers[i].row);
             hasPinned = true;
         } else {
             unpinnedTiers.push(t);
-            this.tierHolder.appendChild(this.tiers[i].row);
+            if (visible)
+                this.tierHolder.appendChild(this.tiers[i].row);
         }
     }
 
@@ -1237,9 +1262,26 @@ Browser.prototype.withPreservedSelection = function(f) {
 }
 
 Browser.prototype.refreshTier = function(tier, tierCallback) {
-    tierCallback = tierCallback || defaultTierRenderer;
-    if (this.knownSpace) {
-        this.knownSpace.invalidate(tier, tierCallback);
+    var renderer = this.getTierRenderer(tier);
+    if (tier.dasSource.renderer === 'multi') {
+        renderer.drawTier(tier);
+    } else {
+        var renderCallback = tierCallback || renderer.renderTier;
+        if (this.knownSpace) {
+            this.knownSpace.invalidate(tier, renderCallback);
+        }
+    }
+}
+
+Browser.prototype.getTierRenderer = function(tier) {
+    var renderer = tier.dasSource.renderer || this.defaultRenderer;
+    if (typeof(renderer) === 'string') {
+        return this.renderers[renderer];
+    } else if (typeof(renderer.renderTier) === 'function' &&
+               typeof(renderer.drawTier) === 'function') {
+        return renderer;
+    } else {
+        console.log("Tier doesn't have a renderer");
     }
 }
 
@@ -1346,19 +1388,18 @@ Browser.prototype.arrangeTiers = function() {
 }
 
 Browser.prototype.refresh = function() {
-
-    this.retrieveTierData(this.tiers, defaultTierRenderer);
+    var browser = this;
+    this.retrieveTierData(this.tiers);
     this.drawOverlays();
     this.positionRuler();
 
 };
 
 var defaultTierRenderer = function(status, tier) {
-    tier.draw();
-    tier.updateStatus(status);
+    console.log("DEPRECATED!");
 }
 
-Browser.prototype.retrieveTierData = function(tiers, tierRendererCallback) {
+Browser.prototype.retrieveTierData = function(tiers) {
     this.notifyLocation();
     var width = (this.viewEnd - this.viewStart) + 1;
     var minExtraW = (100.0/this.scale)|0;
@@ -1399,8 +1440,14 @@ Browser.prototype.retrieveTierData = function(tiers, tierRendererCallback) {
         this.drawnStart = outerDrawnStart;
         this.drawnEnd = outerDrawnEnd;
     }
+
     // send in the subset of tiers to retrieve.
-    this.knownSpace.retrieveFeatures(tiers, this.chr, this.drawnStart, this.drawnEnd, scaledQuantRes, tierRendererCallback);
+    this.knownSpace.retrieveFeatures(tiers,
+                                     this.chr,
+                                     this.drawnStart,
+                                     this.drawnEnd,
+                                     scaledQuantRes);
+                                     // tierRenderer);
 }
 
 function setSources(msh, availableSources, maybeMapping) {
