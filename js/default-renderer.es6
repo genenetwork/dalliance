@@ -780,7 +780,7 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
         } else {
             let originShift = x => (x - relOrigin) * requiredHeight;
             height = Math.max(1, originShift(relScore));
-            y = y + originShift(relScore);
+            y = y + originShift(1);
 
             if (relScore >= relOrigin)
                 y = y - height;

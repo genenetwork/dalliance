@@ -1,4 +1,4 @@
-// 
+//
 // Dalliance Genome Explorer
 // (c) Thomas Down 2006-2010
 //
@@ -113,7 +113,7 @@ function drawFeatureTier(tier)
         tier.padding = tier.dasSource.padding;
     else
         tier.padding = MIN_PADDING;
-    
+
     if (typeof(tier.dasSource.scaleVertical) === 'boolean')
         tier.scaleVertical = tier.dasSource.scaleVertical;
     else
@@ -128,7 +128,7 @@ function drawFeatureTier(tier)
 
     for (var uft in tier.ungroupedFeatures) {
         var ufl = tier.ungroupedFeatures[uft];
-        
+
         for (var pgid = 0; pgid < ufl.length; ++pgid) {
             var f = ufl[pgid];
             if (f.parts) {  // FIXME shouldn't really be needed
@@ -162,7 +162,7 @@ function drawFeatureTier(tier)
         }
     }
 
-    // Merge supergroups    
+    // Merge supergroups
 
     if (tier.dasSource.collapseSuperGroups && !tier.bumped) {
         for (var sg in tier.superGroups) {
@@ -245,7 +245,7 @@ function drawFeatureTier(tier)
             }
 
             delete tier.superGroups[sg]; // Do we want this?
-        }       
+        }
     }
 
     // Glyphify groups.
@@ -397,7 +397,7 @@ DasTier.prototype.paint = function() {
     if (canvasHeight != this.viewport.height) {
         this.viewport.height = canvasHeight;
     }
-    
+
     var tierHeight = Math.max(lh, this.browser.minTierHeight);
     this.viewportHolder.style.left = '-1000px';
     this.viewport.style.width = retina ? ('' + (fpw/2) + 'px') : ('' + fpw + 'px');
@@ -438,7 +438,7 @@ DasTier.prototype.paint = function() {
         for (var ri = 0; ri < knownRanges.length; ++ri) {
             var r = knownRanges[ri];
             if (ri == 0) {
-                if (r.min() > drawStart) 
+                if (r.min() > drawStart)
                    unmappedBlocks.push({min: drawStart, max: r.min() - 1});
             } else {
                 unmappedBlocks.push({min: knownRanges[ri-1].max() + 1, max: r.min() - 1});
@@ -446,7 +446,7 @@ DasTier.prototype.paint = function() {
 
             if (ri == knownRanges.length - 1 && r.max() < drawEnd) {
                 unmappedBlocks.push({min: r.max() + 1, max: drawEnd});
-            } 
+            }
         }
     }
     if (unmappedBlocks.length > 0) {
@@ -487,7 +487,7 @@ DasTier.prototype.paintToContext = function(gc, oc, offset) {
         var glyphs = subtiers[s].glyphs;
         for (var i = 0; i < glyphs.length; ++i) {
             var glyph = glyphs[i];
-            if (glyph.min() < fpw-offset && glyph.max() > -offset) { 
+            if (glyph.min() < fpw-offset && glyph.max() > -offset) {
                 var glyph = glyphs[i];
                 glyph.draw(gc, oc);
                 if (glyph.quant) {
@@ -517,7 +517,7 @@ DasTier.prototype.paintToContext = function(gc, oc, offset) {
         gc.lineTo(fpw + 1000, ry);
         gc.stroke();
         gc.restore();
-    }    
+    }
 }
 
 DasTier.prototype.paintQuant = function() {
@@ -643,7 +643,7 @@ function glyphsForGroup(features, y, groupElement, tier, connectorType) {
 
     if (glyphs.length == 0)
         return null;
-    
+
     var connector = 'flat';
     if (gstyle && gstyle.glyph === 'LINE') {
         // Stick with flat...
@@ -661,7 +661,7 @@ function glyphsForGroup(features, y, groupElement, tier, connectorType) {
                 connector = 'hat-';
             }
         }
-    }   
+    }
 
     var labelText = null;
     if ((label && labelWanted) || (gstyle && (isDasBooleanTrue(gstyle.LABEL) || isDasBooleanTrue(gstyle.LABELS)))) {  // HACK, LABELS should work.
@@ -770,7 +770,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             if (size < (1.0 * style.STROKETHRESHOLD))
                 outline = null;
         }
-        
+
         size = 1.0 * size;
 
         var mid = (minPos + maxPos)/2;
@@ -793,7 +793,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             gg = new BoxGlyph(mid - hh, 0, size, size, stroke, outline);
         } else if (gtype === 'STAR') {
             var points = 5;
-            if (style.POINTS) 
+            if (style.POINTS)
                 points = style.POINTS | 0;
             gg = new StarGlyph(mid, hh, points, stroke, outline);
         } else {
@@ -836,7 +836,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
                     height = Math.max(1, (relScore - relOrigin) * requiredHeight);
                     y = y + ((1.0 - relOrigin) * requiredHeight);
                 }
-                
+
                 quant = {min: smin, max: smax};
 
                 var heightFudge = 0;
@@ -992,7 +992,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             if (step < 0) step = 0;
             if (step >= grad.length) step = grad.length - 1;
             fill = grad[step];
-        } 
+        }
 
         gg = new PointGlyph((minPos + maxPos)/2, height-sc, height, fill);
     } else if (gtype === '__SEQUENCE') {
@@ -1053,16 +1053,16 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
 
         if (style.__disableQuals)
             quals = false;
-        
+
         gg = new SequenceGlyph(
-            tier.browser.baseColors, 
-            strandColor, 
-            minPos, 
-            maxPos, 
-            height, 
-            seq, 
-            refSeq, 
-            style.__SEQCOLOR, 
+            tier.browser.baseColors,
+            strandColor,
+            minPos,
+            maxPos,
+            height,
+            seq,
+            refSeq,
+            style.__SEQCOLOR,
             quals,
             !isDasBooleanTrue(style.__CLEARBG),
             tier.scaleVertical
@@ -1095,7 +1095,7 @@ function glyphForFeature(feature, y, style, tier, forceHeight, noLabel)
             (!tier.dasSource.collapseSuperGroups || tier.bumped)
             && scale >= 0.5) {
             var refSeq = getRefSeq(tier, min, max);
-            gg = new AminoAcidGlyph(minPos, maxPos, height, fill, refSeq, feature.orientation, feature.readframe);    
+            gg = new AminoAcidGlyph(minPos, maxPos, height, fill, refSeq, feature.orientation, feature.readframe);
         } else {
             gg = new BoxGlyph(minPos, 0, (maxPos - minPos), height, fill, stroke);
         }
@@ -1171,7 +1171,7 @@ DasTier.prototype.styleForFeature = function(f) {
                     typeRE = new RegExp('^' + sh.type + '$');
                     sh._typeRE = typeRE;
                 }
-                if (!typeRE.test(f.type)) 
+                if (!typeRE.test(f.type))
                     continue;
             }
         }

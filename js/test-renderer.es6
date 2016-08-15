@@ -57,6 +57,7 @@ function drawTier(tier) {
             console.log("Tier " + tier.dasSource.name + ", Test failed");
         }
     }
+    console.log("\n\n\n");
 
 }
 
@@ -96,8 +97,10 @@ function compareObjects(o1, o2, depth=0, stack=[]) {
                 printDeep("Arrays of different lengths", depth);
                 printDeep("o1: " + typeof(o1), depth);
                 printDeep(o1.length, depth);
+                console.log(o1);
                 printDeep("o2: " + typeof(o2), depth);
                 printDeep(o2.length, depth);
+                console.log(o2);
                 printDeep("stack:", depth);
                 prettyStack(stack);
                 console.log("-".repeat(depth));
@@ -157,9 +160,10 @@ function printStack(stack) {
 }
 
 function printDeep(str, d=0) {
-    console.log(" ".repeat(d) + str);
+    console.log("/".repeat(d));
+    console.log(str);
 }
 
 function prettyStack(stack) {
-    stack.reverse.forEach((o,i) => printDeep(o, i));
+    stack.reverse().forEach((o,i) => printDeep(o, i));
 }

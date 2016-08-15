@@ -81,18 +81,23 @@
                   tier_type: 'sequence',
                   provides_entrypoints: true
                  },
-                 /* {name:                 'Genemap',*/
-                 /* control: ironControl,*/
-                 /* tier_type:            'rqtl-genotype',*/
-                 /* pinned: true*/
-                 /* },*/
-                 {name: 'Genes',
-                  desc: 'Gene structures from GENCODE M2',
-                  bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',
-                  stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',
-                  collapseSuperGroups: true,
-                  trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'
+                 {name:                 'Genemap',
+                  control: ironControl,
+                  tier_type:            'rqtl-genotype',
+                  pinned: true,
+                  transposed: false,
+                  style: [
+                      {
+
+                      }]
                  },
+                 /* {name: 'Genes',*/
+                 /* desc: 'Gene structures from GENCODE M2',*/
+                 /* bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.bb',*/
+                 /* stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/gencode.xml',*/
+                 /* collapseSuperGroups: true,*/
+                 /* trixURI: 'http://www.biodalliance.org/datasets/GRCm38/gencodeM2.ix'*/
+                 /* },*/
                  /* {name: 'Repeats',*/
                  /* desc: 'Repeat annotation from UCSC', */
                  /* bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',*/
@@ -104,6 +109,7 @@
                  /* stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',*/
                  /* payload: 'bed'*/
                  /* },*/
+                 /*
                  {name: 'QTL',
                   tier_type: 'qtl',
                   uri: 'http://192.168.56.100:8880/qtl/lod.csv',
@@ -111,7 +117,6 @@
                   drawCallback: rulerDrawCallback,
                   rulers: [{ value: 0.55, min: 0, max: 1, width: 3, color: 'red' }],
                   renderer: 'dummy',
-                  /* multi: true*/
                  },
                  {name: 'Additive effect',
                   tier_type: 'qtl',
@@ -119,12 +124,12 @@
                   stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/additive-stylesheet.xml',
                   renderer: 'dummy',
                   multi: true
-                 },
-                 {name: 'Default',
+                 },*/
+                 /*{name: 'Default',
                   tier_type: 'qtl',
                   uri: 'http://192.168.56.100:8880/qtl/lod.csv',
                   renderer: 'multi'
-                 }
+                 }*/
              ],
 
              setDocumentTitle: true,

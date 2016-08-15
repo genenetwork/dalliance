@@ -11,6 +11,10 @@
         <script language="javascript" src="../build/dalliance-all.js"></script>
 
         <script language="javascript">
+         /* var bxdControl =*/
+             /* {"description":"BXD","crosstype":"riself","geno":"genotypes/BXD/geno.csv","geno_transposed":true,"genotypes_descr":{"maternal":1,"paternal":2,"heterozygous":3},"genotypes":{"B":1,"D":2,"H":3},"x_chr":"X","na.strings":["U"],"gmap":"genotypes/BXD/gmap.csv"};*/
+
+var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mouse/BXD/geno.csv","geno_transposed":true,"genotypes_descr":{"maternal":1,"paternal":2,"heterozygous":3},"genotypes":{"B":1,"D":2,"H":3},"x_chr":"X","na.strings":["U"],"gmap":"genotype/mouse/BXD/gmap.csv"};
 
          var b = new Browser({
              chr:        '11',
@@ -46,12 +50,68 @@
                              desc: 'Mouse reference genome build GRCm38',
                              tier_type: 'sequence',
                              provides_entrypoints: true}
-                           ,{name: 'QTL',
+                                                 ,{name: 'QTL',
+                                                   tier_type: 'qtl',
+                                                   /* uri: 'http://gsocbox:8880/static/qtl/lod_bak.csv',*/
+                                                   uri: 'http://gsocbox:8880/static/qtl/lod2.csv',
+                                                   stylesheet_uri: "http://gsocbox:8880/stylesheets/qtl-stylesheet.xml",
+                                                 }
+                           ,{name:                 'Genemap',
+                             /* control: bxdControl,*/
+                             controlURI: "http://gsocbox:8880/genotype/mouse/BXD.json",
+                             /* controlURI: "http://test-gn2.genenetwork.org/api_pre1/genotype/mouse/BXD.json",*/
+                             /* URIBase: "http://test-gn2.genenetwork.org/api_pre1/genotype/mouse/",*/
+                             URIBase: "http://gsocbox:8880/",
+                             tier_type:            'rqtl-genotype',
+                             pinned: true,
+                             transposed: true,
+                             style: [
+                                 { type: "default",
+                                   method: "U",
+                                   style: { glyph: "BOX",
+                                            LINE: "0.5",
+                                            FGCOLOR: "black",
+                                            BGCOLOR: "white",
+                                            BGITEM: "true",
+                                            HEIGHT: "2",
+                                            BUMP: "true",
+                                   }},
+                                 { type: "default",
+                                   method: "B",
+                                   style: { glyph: "BOX",
+                                            LINE: "0.5",
+                                            FGCOLOR: "blue",
+                                            BGCOLOR: "blue",
+                                            BGITEM: "true",
+                                            HEIGHT: "2",
+                                            BUMP: "true",
+                                   }},
+                                 { type: "default",
+                                   method: "H",
+                                   style: { glyph: "BOX",
+                                            LINE: "0.5",
+                                            FGCOLOR: "green",
+                                            BGCOLOR: "green",
+                                            BGITEM: "true",
+                                            HEIGHT: "2",
+                                            BUMP: "true",
+                                   }},
+                                 { type: "default",
+                                   method: "D",
+                                   style: { glyph: "BOX",
+                                            LINE: "0.5",
+                                            FGCOLOR: "red",
+                                            BGCOLOR: "red",
+                                            BGITEM: "true",
+                                            HEIGHT: "2",
+                                            BUMP: "true",
+                                   }},
+                             ]
+                           },
+                           /*,{name: 'QTL',
                              tier_type: 'qtl',
                              uri: 'http://192.168.56.100:8880/static/qtl/lod_bak.csv',
                              stylesheet_uri: "http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml",
-                             /* uri: 'http://localhost:8000/lod.csv',*/
-                             /* stylesheet_uri: 'http://localhost:8000/qtl-stylesheet.xml',*/
                              renderer: 'sub',
                              sub: {
                                  multi_id: "multi_1",
@@ -82,7 +142,7 @@
                                  grid_offset: 0,
                                  grid_spacing: 10,
                              },
-                           }
+                           }*/
                            ,{name: 'Repeats',
                              desc: 'Repeat annotation from UCSC',
                              bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',

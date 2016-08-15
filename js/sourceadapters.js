@@ -1786,5 +1786,5 @@ if (typeof(module) !== 'undefined') {
     require('./vcf');
     require('./rqtl-genotype-source.es6');
     require('./qtl-source.es6');
-    require('./multitrack.js');
+    require('./test-source.es6');
 }
