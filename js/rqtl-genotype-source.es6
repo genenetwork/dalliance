@@ -1,14 +1,10 @@
 /* jshint esversion: 6 */
 
 import { registerSourceAdapterFactory,
-         makeParser,
          FeatureSourceBase
        } from "./sourceadapters.js";
 
-import { DASStylesheet,
-         DASStyle,
-         DASFeature,
-         DASGroup
+import { DASFeature
        } from "./das.js";
 
 import * as Csv from "./csv.es6";

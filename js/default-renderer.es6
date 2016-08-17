@@ -363,8 +363,8 @@ function bumpSubtiers(tier, glyphs, grid, gridOffset, gridSpacing) {
     glyphs.forEach(glyph => {
         // if the glyph is to be bumped...
         if (glyph.bump &&
-            tier.bumped ||
-            tier.dasSource.collapseSuperGroups) {
+            (tier.bumped ||
+            tier.dasSource.collapseSuperGroups)) {
 
             let glyphTier = bumpedSTs.find(st => st.hasSpaceFor(glyph));
 
@@ -780,7 +780,7 @@ function featureToCrossLikeGlyph(canvas, tier, feature, y, glyphType, style, for
         } else {
             let originShift = x => (x - relOrigin) * requiredHeight;
             height = Math.max(1, originShift(relScore));
-            y = y + originShift(relScore);
+            y = y + originShift(1);
 
             if (relScore >= relOrigin)
                 y = y - height;
@@ -852,6 +852,11 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
 
         if (centerOnAxis)
             y += height / 2;
+
+        if (centerOnAxis)
+            quant = null;
+        else
+            quant = {min: smin, max: smax};
     }
 
     let stroke = style.FGCOLOR || null;
