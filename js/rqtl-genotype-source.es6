@@ -81,7 +81,6 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                     let max = Infinity;
                     if (index < results.length-1) {
                         let nextRow = results[index+1];
-                        max = nextRow.Mb * 1000000 - 100;
                         max = R.defaultTo(nextRow.pos, nextRow.Mb);
                         max = max * 1000000 - 10;
                     }
@@ -113,11 +112,12 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                             if ((indId !== "id" || indId !== "marker") &&
                                 this.markerPositions[marker].chr === chr) {
                                 let feature = new DASFeature();
-                                feature.id = indId;
                                 feature.label = marker;
+                                feature.type = indId;
 
                                 feature.method = row[indId];
 
+                                feature.segment = chr;
                                 feature.min = pos.min;
                                 feature.max = pos.max;
 
@@ -164,8 +164,7 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                 .then(() => this.fetchGeno(chr, callback));
         } else {
             this.fetchGmap(chr, callback)
-                // .then(this.fetchGmap)
-                .then(this.fetchGeno);
+                .then(() => this.fetchGeno(chr, callback));
         }
 
     }
