@@ -152,6 +152,9 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let score = feature.score;
     let label = feature.label || feature.id;
 
+    // Hide glyphs that are smaller than a pixel in width.
+    if ((max - min) * scale < 1) return null;
+
     let minPos = (min - origin) * scale;
     let rawMaxPos = ((max - origin + 1) * scale);
     let maxPos = Math.max(rawMaxPos, minPos + 1);
@@ -248,8 +251,8 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         if (feature.type == 'translation' &&
             (feature.method == 'protein_coding' || feature.readframeExplicit) &&
             (!feature.tags || feature.tags.indexOf('cds_start_NF') < 0 || feature.readframeExplicit) &&
-            (!tier.dasSource.collapseSuperGroups || tier.bumped)
-            && scale >= 0.5) {
+            (!tier.dasSource.collapseSuperGroups || tier.bumped) &&
+            scale >= 0.5) {
             let refSeq = getRefSeq(tier, min, max);
             glyph = new Glyphs.AminoAcidGlyph(minPos,
                                            maxPos,
