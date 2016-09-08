@@ -36,7 +36,22 @@
                            ,{name: 'QTL',
                              tier_type: 'qtl',
                              uri: 'http://test-gn2.genenetwork.org/api_pre1/qtl/lod2.csv',
-                             stylesheet_uri: "http://test-gn2.genenetwork.org/api_pre1/stylesheets/qtl-stylesheet.xml",
+                             style: [
+                                 { type: "default",
+                                   style: { glyph: "LINEPLOT",
+                                            BUMP: "no",
+                                            COLOR1: "blue",
+                                            COLOR2: "blue",
+                                            COLOR3: "blue",
+                                            HEIGHT: "120",
+                                            MAX: "50",
+                                            MIN: "0",
+                                            AUTOMAX: "yes",
+                                            AUTOMIN: "yes",
+                                            STEPS: "500"
+                                   }
+                                 }
+                             ],
                              renderer: 'sub',
                              sub: {
                                  multi_id: "multi_1",
