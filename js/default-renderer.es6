@@ -1,7 +1,7 @@
 /* jshint esversion: 6 */
 "use strict";
 
-import { SubTier, makeLineGlyph } from "./feature-draw.js";
+import { SubTier } from "./feature-draw.js";
 
 import { drawSeqTier } from "./sequence-draw.js";
 
@@ -320,7 +320,7 @@ function groupFeatures(tier, canvas, y) {
         let gf = gbsFeatures[gbs];
         let style = gbsStyles[gbs];
         if (style.glyph === 'LINEPLOT') {
-            let lineGraphGlyphs = makeLineGlyph(gf, style, tier, y);
+            let lineGraphGlyphs = makeLinePlot(gf, style, tier, y);
             lineGraphGlyphs.forEach(g => glyphs.push(g));
         }
     }
@@ -1022,6 +1022,86 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
     }
 
     return glyph;
+}
+
+function makeLinePlot(features, style, tier, yshift) {
+    yshift = yshift || 0;
+
+    let origin = tier.browser.viewStart, scale = tier.browser.scale;
+    let height = tier.forceHeight || style.HEIGHT || 30;
+    let min = tier.quantMin(style);
+    let max = tier.quantMax(style);
+
+    // AUTOMIN & AUTOMAX respectively set the lower and upper bounds
+    if (isDasBooleanTrue(style.AUTOMIN)) {
+        // add some basically arbitrary padding
+        min = tier.currentFeaturesMinScore*0.95;
+    }
+    if (isDasBooleanTrue(style.AUTOMAX)) {
+        max = tier.currentFeaturesMaxScore*1.05;
+    }
+
+    let yscale = ((1.0 * height) / (max - min));
+    let width = style.LINEWIDTH || 1;
+    let color = style.FGCOLOR || style.COLOR1 || 'black';
+
+    let prevSign = 1;
+    let curSign = null;
+
+    let curGlyphPoints = [];
+    let glyphSequences = [];
+
+    let prevPoint = null;
+
+    features.forEach(f => {
+        let px = ((((f.min|0) + (f.max|0)) / 2) - origin) * scale;
+        let sc = ((f.score - (1.0*min)) * yscale)|0;
+
+        // Additive tracks are always above the x-axis, and are colored
+        // depending on whether the score is positive or negative.
+        if (isDasBooleanTrue(style.ADDITIVE)) {
+            curSign = f.score < 0 ? -1 : 1;
+
+            if (curSign !== prevSign) {
+                glyphSequences.push({points: curGlyphPoints,
+                                     color: prevSign === 1 ?
+                                       style.POSCOLOR
+                                     : style.NEGCOLOR});
+                curGlyphPoints = [];
+                // Need to add the previous point to this sequence,
+                // otherwise there is a gap in the resulting plot
+                curGlyphPoints.push(prevPoint);
+            }
+            prevSign = curSign;
+        } else {
+            curSign = 1;
+        }
+
+        let py = (height - (sc * curSign)) + yshift;
+        prevPoint = {x: px, y: py};
+        curGlyphPoints.push(prevPoint);
+    });
+
+
+    // Need to add the final sequence of points as well.
+    if (isDasBooleanTrue(style.ADDITIVE)) {
+        color = curSign === 1 ? style.POSCOLOR : style.NEGCOLOR;
+    }
+    glyphSequences.push({points: curGlyphPoints,
+                         color: color});
+
+
+    let lggs = glyphSequences.map(gs => {
+        let lgg = new Glyphs.LineGraphGlyph(gs.points, gs.color, height);
+        lgg.quant = {min, max};
+
+        if (style.ZINDEX)
+            lgg.zindex = style.ZINDEX|0;
+
+        return lgg;
+    });
+
+    return lggs;
 }
 
 // height is subtier height

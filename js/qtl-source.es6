@@ -35,9 +35,7 @@ class QtlMapSource extends FeatureSourceBase {
             }
 
             results.forEach(row => {
-                // console.log(row);
                 if (row["Chr"] === chr) {
-                    // console.log("adding feature");
                     let feature = new DASFeature();
 
                     feature.segment = chr;
