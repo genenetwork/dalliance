@@ -60,8 +60,10 @@ function drawTier(tier) {
     }
 
     if (tier.subtiers) {
-        prepareViewport(tier, canvas, retina, true);
-        paint(tier, canvas, retina, true);
+        let vOffset = R.defaultTo(0, tier.dasSource.vOffset);
+
+        prepareViewport(tier, canvas, retina, true, vOffset);
+        paint(tier, canvas, vOffset);
     }
 
     tier.drawOverlay();
@@ -577,7 +579,7 @@ function clearViewport(canvas, width, height, retina = false) {
 }
 
 // Make the viewport & canvas the correct size for the tier
-function prepareViewport(tier, canvas, retina, clear=true) {
+function prepareViewport(tier, canvas, retina, clear=true, vOffset=0) {
     let desiredWidth = tier.browser.featurePanelWidth + 2000;
     if (retina) {
         desiredWidth *= 2;
@@ -588,7 +590,7 @@ function prepareViewport(tier, canvas, retina, clear=true) {
         tier.viewport.width = fpw = desiredWidth;
     }
 
-    let lh = tier.padding;
+    let lh = tier.padding + vOffset;
 
     tier.subtiers.forEach(s => lh += s.height + tier.padding);
 
@@ -620,10 +622,11 @@ function prepareViewport(tier, canvas, retina, clear=true) {
 
 }
 
-function paint(tier, canvas) {
+function paint(tier, canvas, vOffset=0) {
     let overlayLabelCanvas = new Glyphs.OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
-    canvas.translate(offset, tier.padding);
+    canvas.translate(offset, vOffset + tier.padding);
+    console.log("paint offset: " + vOffset);
     overlayLabelCanvas.translate(0, tier.padding);
 
     tier.paintToContext(canvas, overlayLabelCanvas, offset);
