@@ -8,7 +8,7 @@
         </style>
 
         <title>BioDalliance Renderer Test</title>
-        <script language="javascript" src="../../build/dalliance-all.js"></script>
+        <script language="javascript" src="../build/dalliance-all.js"></script>
 
         <script language="javascript">
 
@@ -279,6 +279,32 @@
                              }
 
 
+                           ,{name: 'Genes, LINEPLOT glyph',
+                             desc: 'Gene structures from GENCODE M2',
+                             collapseSuperGroups: true,
+                             tier_type: 'test-source',
+                             features: [{
+                                 min: 11000000,
+                                 max: 18000000,
+                                 score: 5
+                             }],
+                             style: [{
+                                 type: 'default',
+                                 style: {
+                                     glyph: 'LINEPLOT',
+                                     HEIGHT: '30',
+                                     MAX: '5',
+                                     MIN: '0',
+                                     STEPS: '10',
+                                     FGCOLOR: 'red',
+                                     BGCOLOR: 'red',
+                                     BUMP: 'yes',
+                                     LABEL: 'no',
+                                 }
+                             }],
+                             }
+
+
                            ,{name: 'Genes, LINE glyph',
                              desc: 'Gene structures from GENCODE M2',
                              collapseSuperGroups: true,
@@ -416,12 +442,8 @@
                                      LABEL: 'no',
                                  }
                              }],
-                             }
+                             }],
 
-                           ,{name: 'Repeats',
-                             desc: 'Repeat annotation from UCSC',
-                             bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',
-                             stylesheet_uri: 'http://www.biodalliance.org/stylesheets/bb-repeats2.xml'}],
              uiPrefix: '../',
 
              fullScreen: true,
