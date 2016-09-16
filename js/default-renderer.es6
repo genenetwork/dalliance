@@ -827,7 +827,18 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
 
     let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
+
     let [smin, smax] = getScoreMinMax(tier, style);
+
+    // AUTOMIN & AUTOMAX respectively set the lower and upper bounds
+    if (isDasBooleanTrue(style.AUTOMIN)) {
+        smin = tier.currentFeaturesMinScore*0.95;
+        console.log("smin:\t" + smin);
+    }
+    if (isDasBooleanTrue(style.AUTOMAX)) {
+        smax = tier.currentFeaturesMaxScore*1.05;
+        console.log("smax:\t" + smax);
+    }
 
     if ((1.0 * score) < (1.0 * smin)) {
         score = smin;
@@ -841,6 +852,14 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
     if (centerOnAxis) {
         let tmin = tier.quantMin(style);
         let tmax = tier.quantMax(style);
+
+        if (isDasBooleanTrue(style.AUTOMIN)) {
+            tmin = tier.currentFeaturesMinScore*0.95;
+        }
+        if (isDasBooleanTrue(style.AUTOMAX)) {
+            tmax = tier.currentFeaturesMaxScore*1.05;
+        }
+
         smin = tmin - ((tmax - tmin) / 2);
         smax = tmax - ((tmax - tmin) / 2);
     }
@@ -858,7 +877,7 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
         if (centerOnAxis)
             y += height / 2;
 
-        if (centerOnAxis)
+        if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
             quant = null;
         else
             quant = {min: smin, max: smax};

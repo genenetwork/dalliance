@@ -18,6 +18,7 @@
              defaultEnd: 30000000,
              viewStart:  10000000,
              viewEnd:    30000000,
+             maxViewWidth: 20000000,
              cookieKey:  'mouse38',
 
              coordSystem: {
@@ -62,7 +63,24 @@
                            ,{name: 'SNP density',
                              jbURI: "http://test-gn2.genenetwork.org/api_pre1/snp/",
                              jbQuery: "",
-                             stylesheet_uri: "http://test-gn2.genenetwork.org/api_pre1/stylesheets/snp-stylesheet.xml",
+                             style: [
+                                 { type: "default",
+                                   style: { glyph: "HISTOGRAM",
+                                            MIN: 0,
+                                            MAX: 1000,
+                                            /* AUTOMIN: "yes",*/
+                                            AUTOMAX: "yes",
+                                            STEPS: 500,
+                                            /* AXISCENTER: "yes",*/
+                                            HIDEAXISLABEL: "yes",
+                                            COLOR1: "red",
+                                            COLOR2: "red",
+                                            COLOR3: "red",
+                                            HEIGHT: 120,
+                                   }
+                                 }
+                             ],
+                             refetchOnZoom: true,
                              sub: {
                                  multi_id: "multi_1",
                                  offset: 300,
