@@ -626,7 +626,6 @@ function paint(tier, canvas, vOffset=0) {
     let overlayLabelCanvas = new Glyphs.OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
     canvas.translate(offset, vOffset + tier.padding);
-    console.log("paint offset: " + vOffset);
     overlayLabelCanvas.translate(0, tier.padding);
 
     tier.paintToContext(canvas, overlayLabelCanvas, offset);
