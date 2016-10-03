@@ -17,13 +17,16 @@ system.  It it still possible to use the files in the js directory
 directly, but this is now deprecated and may not be supported in future.
 
 Before building, please install [Node.js](http://nodejs.org/), which
-is needed for the NPM package manager.
+is needed for the NPM package manager. Note that GNU Guix contains
+a recent version of node.
 
 To build:
 
-        (sudo?) npm install -g gulp
-        npm install # Install dependencies
-        gulp        # Build Dalliance
+    sudo npm install -g gulp
+    npm install # Install dependencies
+    npm install --save-dev babel-cli babel-core babel-preset-es2015
+    npm install --save-dev gulp gulp-babel
+    gulp        # Build Dalliance
 
 ...then open any of the HTML files in the `example-browsers` directory
 to test.
