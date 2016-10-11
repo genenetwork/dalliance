@@ -115,6 +115,9 @@ function Browser(opts) {
     this.maxViewWidth = 500000;
     this.defaultSubtierMax = 100;
 
+    this.highZoomThreshold = 0.2;
+    this.mediumZoomThreshold = 0.01
+
     // Options.
 
     this.reverseScrolling = false;
@@ -123,6 +126,8 @@ function Browser(opts) {
     this.defaultHighlightAlpha = 0.3;
     this.exportHighlights = true;
     this.exportRuler = true;
+    this.exportBanner = true;
+    this.exportRegion = true;
     this.singleBaseHighlight = true;
 
     // Visual config.
@@ -158,6 +163,8 @@ function Browser(opts) {
 
     this.assemblyNamePrimary = true;
     this.assemblyNameUcsc = true;
+
+    this.defaultSearchRegionPadding = 10000;
 
     // HTTP warning support
 
@@ -321,7 +328,7 @@ Browser.prototype.realInit = function() {
     this.resizeListener = function(ev) {
         thisB.resizeViewer();
     };
-    window.addEventListener('resize', this.resizeListener, false);
+    
     this.ruler = makeElement('div', null, {className: 'guideline'})
     this.ruler2 = makeElement('div', null, {className: 'single-base-guideline'});
     this.tierHolderHolder.appendChild(this.ruler);
@@ -379,6 +386,8 @@ Browser.prototype.realInit2 = function() {
     removeChildren(this.pinnedTierHolder);
 
     this.featurePanelWidth = this.tierHolder.getBoundingClientRect().width | thisB.offscreenInitWidth | 0;
+    window.addEventListener('resize', this.resizeListener, false);
+    
     this.scale = this.featurePanelWidth / (this.viewEnd - this.viewStart);
     if (!this.zoomMax) {
         this.zoomMax = this.zoomExpt * Math.log(this.maxViewWidth / this.zoomBase);
@@ -2294,9 +2303,9 @@ Browser.prototype.featureDoubleClick = function(hit, rx, ry) {
 
 Browser.prototype.zoomForScale = function(scale) {
     var ssScale;
-    if (scale > 0.2) {
+    if (scale > this.highZoomThreshold) {
         ssScale = 'high';
-    } else if (scale > 0.01) {
+    } else if (scale > this.mediumZoomThreshold) {
         ssScale = 'medium';
     } else  {
         ssScale = 'low';

@@ -74,18 +74,26 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                     reject(error);
                 }
 
-                results.map((row, index) => {
+                let sorted = results.sort((r1, r2) => {
+                    if (r1.chr < r2.chr) return -1;
+                    else if (r1.chr > r2.chr) return 1;
+                    else return r1.Mb - r2.Mb;
+                });
+
+                sorted.map((row, index) => {
                     let chr = row.chr;
-                    let min = R.defaultTo(row.pos, row.Mb);
-                    min = min * 1000000;
-                    let max = Infinity;
-                    if (index < results.length-1) {
-                        let nextRow = results[index+1];
-                        max = R.defaultTo(nextRow.pos, nextRow.Mb);
-                        max = max * 1000000 - 10;
-                    }
+                    let min = row.Mb;
+                    min = min * 1000000 + 10;
+                    let max = min + 1000;
+                    if (index < sorted.length-1) {
+                        let nextRow = sorted[index+1];
+                        if (nextRow.chr === row.chr) {
+                            max = nextRow.Mb;
+                            max = max * 1000000 - 1000;
+                        }                    }
                     this.markerPositions[row.marker] = {chr, min, max};
                 });
+
                 resolve(chr, callback);
             });
         });
@@ -163,8 +171,9 @@ class RqtlGenotypeSource extends FeatureSourceBase {
                 .then(() => this.fetchGmap(chr, callback))
                 .then(() => this.fetchGeno(chr, callback));
         } else {
-            this.fetchGmap(chr, callback)
-                .then(() => this.fetchGeno(chr, callback));
+            // this.fetchGmap(chr, callback)
+            this.fetchGeno(chr, callback);
+                // .then(() => this.fetchGeno(chr, callback));
         }
 
     }

@@ -1,7 +1,7 @@
 /* jshint esversion: 6 */
 "use strict";
 
-import { SubTier, makeLineGlyph } from "./feature-draw.js";
+import { SubTier } from "./feature-draw.js";
 
 import { drawSeqTier } from "./sequence-draw.js";
 
@@ -60,8 +60,10 @@ function drawTier(tier) {
     }
 
     if (tier.subtiers) {
-        prepareViewport(tier, canvas, retina, true);
-        paint(tier, canvas, retina, true);
+        let vOffset = R.defaultTo(0, tier.dasSource.vOffset);
+
+        prepareViewport(tier, canvas, retina, true, vOffset);
+        paint(tier, canvas, vOffset);
     }
 
     tier.drawOverlay();
@@ -151,6 +153,9 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
     let strand = feature.orientation;
     let score = feature.score;
     let label = feature.label || feature.id;
+
+    // Hide glyphs that are smaller than a pixel in width.
+    if (tier.dasSource.hideSubpixelGlyphs && (max - min) * scale < 1) return null;
 
     let minPos = (min - origin) * scale;
     let rawMaxPos = ((max - origin + 1) * scale);
@@ -248,8 +253,8 @@ function glyphForFeature(canvas, feature, y, style, tier, forceHeight, noLabel) 
         if (feature.type == 'translation' &&
             (feature.method == 'protein_coding' || feature.readframeExplicit) &&
             (!feature.tags || feature.tags.indexOf('cds_start_NF') < 0 || feature.readframeExplicit) &&
-            (!tier.dasSource.collapseSuperGroups || tier.bumped)
-            && scale >= 0.5) {
+            (!tier.dasSource.collapseSuperGroups || tier.bumped) &&
+            scale >= 0.5) {
             let refSeq = getRefSeq(tier, min, max);
             glyph = new Glyphs.AminoAcidGlyph(minPos,
                                            maxPos,
@@ -317,7 +322,7 @@ function groupFeatures(tier, canvas, y) {
         let gf = gbsFeatures[gbs];
         let style = gbsStyles[gbs];
         if (style.glyph === 'LINEPLOT') {
-            let lineGraphGlyphs = makeLineGlyph(gf, style, tier, y);
+            let lineGraphGlyphs = makeLinePlot(gf, style, tier, y);
             lineGraphGlyphs.forEach(g => glyphs.push(g));
         }
     }
@@ -444,7 +449,7 @@ function prepareSubtiers(tier, canvas, y=0, grid=true) {
                     group.links = tier.groups[sgGroup[0]].links;
                 }
 
-                delete tier.groupedFeatures[sgGroup[g]];
+                delete tier.groupedFeatures[sgGroup[i]];
 
             });
 
@@ -574,7 +579,7 @@ function clearViewport(canvas, width, height, retina = false) {
 }
 
 // Make the viewport & canvas the correct size for the tier
-function prepareViewport(tier, canvas, retina, clear=true) {
+function prepareViewport(tier, canvas, retina, clear=true, vOffset=0) {
     let desiredWidth = tier.browser.featurePanelWidth + 2000;
     if (retina) {
         desiredWidth *= 2;
@@ -585,7 +590,7 @@ function prepareViewport(tier, canvas, retina, clear=true) {
         tier.viewport.width = fpw = desiredWidth;
     }
 
-    let lh = tier.padding;
+    let lh = tier.padding + vOffset;
 
     tier.subtiers.forEach(s => lh += s.height + tier.padding);
 
@@ -617,10 +622,10 @@ function prepareViewport(tier, canvas, retina, clear=true) {
 
 }
 
-function paint(tier, canvas) {
+function paint(tier, canvas, vOffset=0) {
     let overlayLabelCanvas = new Glyphs.OverlayLabelCanvas();
     let offset = ((tier.glyphCacheOrigin - tier.browser.viewStart)*tier.browser.scale)+1000;
-    canvas.translate(offset, tier.padding);
+    canvas.translate(offset, vOffset + tier.padding);
     overlayLabelCanvas.translate(0, tier.padding);
 
     tier.paintToContext(canvas, overlayLabelCanvas, offset);
@@ -822,7 +827,18 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
 
     let centerOnAxis = isDasBooleanTrue(style["AXISCENTER"]);
 
+
     let [smin, smax] = getScoreMinMax(tier, style);
+
+    // AUTOMIN & AUTOMAX respectively set the lower and upper bounds
+    if (isDasBooleanTrue(style.AUTOMIN)) {
+        smin = tier.currentFeaturesMinScore*0.95;
+        console.log("smin:\t" + smin);
+    }
+    if (isDasBooleanTrue(style.AUTOMAX)) {
+        smax = tier.currentFeaturesMaxScore*1.05;
+        console.log("smax:\t" + smax);
+    }
 
     if ((1.0 * score) < (1.0 * smin)) {
         score = smin;
@@ -836,6 +852,14 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
     if (centerOnAxis) {
         let tmin = tier.quantMin(style);
         let tmax = tier.quantMax(style);
+
+        if (isDasBooleanTrue(style.AUTOMIN)) {
+            tmin = tier.currentFeaturesMinScore*0.95;
+        }
+        if (isDasBooleanTrue(style.AUTOMAX)) {
+            tmax = tier.currentFeaturesMaxScore*1.05;
+        }
+
         smin = tmin - ((tmax - tmin) / 2);
         smax = tmax - ((tmax - tmin) / 2);
     }
@@ -853,7 +877,7 @@ function featureToGradientLikeGlyph(canvas, tier, feature, y, glyphType, style, 
         if (centerOnAxis)
             y += height / 2;
 
-        if (centerOnAxis)
+        if (isDasBooleanTrue(style["HIDEAXISLABEL"]))
             quant = null;
         else
             quant = {min: smin, max: smax};
@@ -1019,6 +1043,86 @@ function sequenceGlyph(canvas, tier, feature, style, forceHeight) {
     }
 
     return glyph;
+}
+
+function makeLinePlot(features, style, tier, yshift) {
+    yshift = yshift || 0;
+
+    let origin = tier.browser.viewStart, scale = tier.browser.scale;
+    let height = tier.forceHeight || style.HEIGHT || 30;
+    let min = tier.quantMin(style);
+    let max = tier.quantMax(style);
+
+    // AUTOMIN & AUTOMAX respectively set the lower and upper bounds
+    if (isDasBooleanTrue(style.AUTOMIN)) {
+        // add some basically arbitrary padding
+        min = tier.currentFeaturesMinScore*0.95;
+    }
+    if (isDasBooleanTrue(style.AUTOMAX)) {
+        max = tier.currentFeaturesMaxScore*1.05;
+    }
+
+    let yscale = ((1.0 * height) / (max - min));
+    let width = style.LINEWIDTH || 1;
+    let color = style.FGCOLOR || style.COLOR1 || 'black';
+
+    let prevSign = 1;
+    let curSign = null;
+
+    let curGlyphPoints = [];
+    let glyphSequences = [];
+
+    let prevPoint = null;
+
+    features.forEach(f => {
+        let px = ((((f.min|0) + (f.max|0)) / 2) - origin) * scale;
+        let sc = ((f.score - (1.0*min)) * yscale)|0;
+
+        // Additive tracks are always above the x-axis, and are colored
+        // depending on whether the score is positive or negative.
+        if (isDasBooleanTrue(style.ADDITIVE)) {
+            curSign = f.score < 0 ? -1 : 1;
+
+            if (curSign !== prevSign) {
+                glyphSequences.push({points: curGlyphPoints,
+                                     color: prevSign === 1 ?
+                                       style.POSCOLOR
+                                     : style.NEGCOLOR});
+                curGlyphPoints = [];
+                // Need to add the previous point to this sequence,
+                // otherwise there is a gap in the resulting plot
+                curGlyphPoints.push(prevPoint);
+            }
+            prevSign = curSign;
+        } else {
+            curSign = 1;
+        }
+
+        let py = (height - (sc * curSign)) + yshift;
+        prevPoint = {x: px, y: py};
+        curGlyphPoints.push(prevPoint);
+    });
+
+
+    // Need to add the final sequence of points as well.
+    if (isDasBooleanTrue(style.ADDITIVE)) {
+        color = curSign === 1 ? style.POSCOLOR : style.NEGCOLOR;
+    }
+    glyphSequences.push({points: curGlyphPoints,
+                         color: color});
+
+
+    let lggs = glyphSequences.map(gs => {
+        let lgg = new Glyphs.LineGraphGlyph(gs.points, gs.color, height);
+        lgg.quant = {min, max};
+
+        if (style.ZINDEX)
+            lgg.zindex = style.ZINDEX|0;
+
+        return lgg;
+    });
+
+    return lggs;
 }
 
 // height is subtier height

@@ -11,10 +11,6 @@
         <script language="javascript" src="../build/dalliance-all.js"></script>
 
         <script language="javascript">
-         /* var bxdControl =*/
-             /* {"description":"BXD","crosstype":"riself","geno":"genotypes/BXD/geno.csv","geno_transposed":true,"genotypes_descr":{"maternal":1,"paternal":2,"heterozygous":3},"genotypes":{"B":1,"D":2,"H":3},"x_chr":"X","na.strings":["U"],"gmap":"genotypes/BXD/gmap.csv"};*/
-
-var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mouse/BXD/geno.csv","geno_transposed":true,"genotypes_descr":{"maternal":1,"paternal":2,"heterozygous":3},"genotypes":{"B":1,"D":2,"H":3},"x_chr":"X","na.strings":["U"],"gmap":"genotype/mouse/BXD/gmap.csv"};
 
          var b = new Browser({
              chr:        '11',
@@ -22,6 +18,7 @@ var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mous
              defaultEnd: 30000000,
              viewStart:  10000000,
              viewEnd:    30000000,
+             maxViewWidth: 20000000,
              cookieKey:  'mouse38',
 
              coordSystem: {
@@ -32,86 +29,30 @@ var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mous
                  ucscName: 'mm10'
              },
 
-
-             chains: {
-                 mm9ToMm10: new Chainset('http://www.derkholm.net:8080/das/mm9ToMm10/', 'NCBIM37', 'GRCm38',
-                                         {
-                                             speciesName: 'Mouse',
-                                             taxon: 10090,
-                                             auth: 'NCBIM',
-                                             version: 37,
-                                             ucscName: 'mm9'
-                                         })
-             },
-
-
              sources:      [{name: 'Genome',
                              twoBitURI:  'http://www.biodalliance.org/datasets/GRCm38/mm10.2bit',
                              desc: 'Mouse reference genome build GRCm38',
                              tier_type: 'sequence',
                              provides_entrypoints: true}
-                                                 ,{name: 'QTL',
-                                                   tier_type: 'qtl',
-                                                   /* uri: 'http://gsocbox:8880/static/qtl/lod_bak.csv',*/
-                                                   uri: 'http://gsocbox:8880/static/qtl/lod2.csv',
-                                                   stylesheet_uri: "http://gsocbox:8880/stylesheets/qtl-stylesheet.xml",
-                                                 }
-                           ,{name:                 'Genemap',
-                             /* control: bxdControl,*/
-                             controlURI: "http://gsocbox:8880/genotype/mouse/BXD.json",
-                             /* controlURI: "http://test-gn2.genenetwork.org/api_pre1/genotype/mouse/BXD.json",*/
-                             /* URIBase: "http://test-gn2.genenetwork.org/api_pre1/genotype/mouse/",*/
-                             URIBase: "http://gsocbox:8880/",
-                             tier_type:            'rqtl-genotype',
-                             pinned: true,
-                             transposed: true,
+                           ,{name: 'QTL',
+                             tier_type: 'qtl',
+                             uri: 'http://test-gn2.genenetwork.org/api_pre1/qtl/lod2.csv',
                              style: [
                                  { type: "default",
-                                   method: "U",
-                                   style: { glyph: "BOX",
-                                            LINE: "0.5",
-                                            FGCOLOR: "black",
-                                            BGCOLOR: "white",
-                                            BGITEM: "true",
-                                            HEIGHT: "2",
-                                            BUMP: "true",
-                                   }},
-                                 { type: "default",
-                                   method: "B",
-                                   style: { glyph: "BOX",
-                                            LINE: "0.5",
-                                            FGCOLOR: "blue",
-                                            BGCOLOR: "blue",
-                                            BGITEM: "true",
-                                            HEIGHT: "2",
-                                            BUMP: "true",
-                                   }},
-                                 { type: "default",
-                                   method: "H",
-                                   style: { glyph: "BOX",
-                                            LINE: "0.5",
-                                            FGCOLOR: "green",
-                                            BGCOLOR: "green",
-                                            BGITEM: "true",
-                                            HEIGHT: "2",
-                                            BUMP: "true",
-                                   }},
-                                 { type: "default",
-                                   method: "D",
-                                   style: { glyph: "BOX",
-                                            LINE: "0.5",
-                                            FGCOLOR: "red",
-                                            BGCOLOR: "red",
-                                            BGITEM: "true",
-                                            HEIGHT: "2",
-                                            BUMP: "true",
-                                   }},
-                             ]
-                           },
-                           /*,{name: 'QTL',
-                             tier_type: 'qtl',
-                             uri: 'http://192.168.56.100:8880/static/qtl/lod_bak.csv',
-                             stylesheet_uri: "http://192.168.56.100:8880/stylesheets/qtl-stylesheet.xml",
+                                   style: { glyph: "LINEPLOT",
+                                            BUMP: "no",
+                                            COLOR1: "blue",
+                                            COLOR2: "blue",
+                                            COLOR3: "blue",
+                                            HEIGHT: "120",
+                                            MAX: "50",
+                                            MIN: "0",
+                                            AUTOMAX: "yes",
+                                            AUTOMIN: "yes",
+                                            STEPS: "500"
+                                   }
+                                 }
+                             ],
                              renderer: 'sub',
                              sub: {
                                  multi_id: "multi_1",
@@ -120,9 +61,26 @@ var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mous
                              },
                            }
                            ,{name: 'SNP density',
-                             jbURI: "http://192.168.56.100:8880/snp/",
+                             jbURI: "http://test-gn2.genenetwork.org/api_pre1/snp/",
                              jbQuery: "",
-                             stylesheet_uri: 'http://192.168.56.100:8880/stylesheets/snp-stylesheet.xml',
+                             style: [
+                                 { type: "default",
+                                   style: { glyph: "HISTOGRAM",
+                                            MIN: 0,
+                                            MAX: 1000,
+                                            /* AUTOMIN: "yes",*/
+                                            AUTOMAX: "yes",
+                                            STEPS: 500,
+                                            /* AXISCENTER: "yes",*/
+                                            HIDEAXISLABEL: "yes",
+                                            COLOR1: "red",
+                                            COLOR2: "red",
+                                            COLOR3: "red",
+                                            HEIGHT: 120,
+                                   }
+                                 }
+                             ],
+                             refetchOnZoom: true,
                              sub: {
                                  multi_id: "multi_1",
                                  offset: 300,
@@ -142,7 +100,7 @@ var bxdControl = {"description":"BXD","crosstype":"riself","geno":"genotype/mous
                                  grid_offset: 0,
                                  grid_spacing: 10,
                              },
-                           }*/
+                           }
                            ,{name: 'Repeats',
                              desc: 'Repeat annotation from UCSC',
                              bwgURI: 'http://www.biodalliance.org/datasets/GRCm38/repeats.bb',

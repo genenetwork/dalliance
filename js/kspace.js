@@ -257,12 +257,16 @@ KnownSpace.prototype.startFetchesFor = function(tier, awaitedSeq) {
             cachedFeatures = filterFeatures(cachedFeatures, min, max);
         }
 
-        thisB.provision(tier, baton.chr, intersection(baton.coverage, new Range(min, max)), baton.scale, wantedTypes, cachedFeatures, baton.status, needsSeq ? awaitedSeq : null);
+        thisB.provision(tier, baton.chr,
+                        intersection(baton.coverage, new Range(min, max)),
+                        baton.scale, wantedTypes,
+                        cachedFeatures, baton.status,
+                        needsSeq ? awaitedSeq : null);
 
         var availableScales = source.getScales();
-        if (baton.scale <= this.scale || !availableScales) {
+
+        if (!tier.dasSource.refetchOnZoom && (baton.scale <= this.scale || !availableScales)) {
             return needsSeq;
-        } else {
         }
     }
 
@@ -310,30 +314,39 @@ KnownSpace.prototype.provision = function(tier, chr, coverage, actualScale, want
         var mayDownsample = false;
         var needBaseComposition = false;
         var src = tier.getSource();
-        while (MappedFeatureSource.prototype.isPrototypeOf(src) || CachingFeatureSource.prototype.isPrototypeOf(src) || OverlayFeatureSource.prototype.isPrototypeOf(src)) {
-	        if (OverlayFeatureSource.prototype.isPrototypeOf(src)) {
-		        src = src.sources[0];
-	        } else {
-		        src = src.source;
-	        }
+        while (MappedFeatureSource.prototype.isPrototypeOf(src) ||
+               CachingFeatureSource.prototype.isPrototypeOf(src) ||
+               OverlayFeatureSource.prototype.isPrototypeOf(src)) {
+
+            if (OverlayFeatureSource.prototype.isPrototypeOf(src)) {
+                src = src.sources[0];
+            } else {
+                src = src.source;
+            }
         }
-        if (BWGFeatureSource.prototype.isPrototypeOf(src) || RemoteBWGFeatureSource.prototype.isPrototypeOf(src) || BAMFeatureSource.prototype.isPrototypeOf(src) || RemoteBAMFeatureSource.prototype.isPrototypeOf(src)) {
+        if (BWGFeatureSource.prototype.isPrototypeOf(src) ||
+            RemoteBWGFeatureSource.prototype.isPrototypeOf(src) ||
+            BAMFeatureSource.prototype.isPrototypeOf(src) ||
+            RemoteBAMFeatureSource.prototype.isPrototypeOf(src)) {
+
             mayDownsample = true;
         }
 
-    	if (!src.opts || (!src.opts.forceReduction && !src.opts.noDownsample)) {
+        if (!src.opts || (!src.opts.forceReduction && !src.opts.noDownsample)) {
             if (/* (actualScale < (this.scale/2) && features.length > 200)  || */
-		        (mayDownsample && wantedTypes && wantedTypes.length == 1 && wantedTypes.indexOf('density') >= 0))
+                (mayDownsample && wantedTypes && wantedTypes.length == 1 && wantedTypes.indexOf('density') >= 0))
             {
-		        features = downsample(features, this.scale);
+                features = downsample(features, this.scale);
             }
-    	}
+        }
 
         if (wantedTypes && wantedTypes.length == 1 && wantedTypes.indexOf('base-coverage') >= 0)
         {
             // Base-composition coverage track
             needBaseComposition = true;
         }
+
+
         if (awaitedSeq) {
             awaitedSeq.await(function(seq) {
                 if (needBaseComposition) {
